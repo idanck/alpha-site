@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Assistant:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@700;800&family=Assistant:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f1b2a'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23e0653d' stroke-width='2.6' fill='none' stroke-linejoin='round'/%3E%3Cpath d='M12.4 18.4h7.2' stroke='%2358b8d8' stroke-width='2.2'/%3E%3C/svg%3E">
 <style>
 /* Layout idea: one editorial column of prose, interrupted by full-bleed schematic bands;
@@ -35,11 +35,18 @@
   --warn:#8a6412;
   --font-display:"Frank Ruhl Libre",Georgia,"Times New Roman",serif;
   --font-body:"Assistant","Segoe UI",system-ui,-apple-system,sans-serif;
-  --font-mono:"IBM Plex Mono",ui-monospace,"Courier New",monospace;
-  --col:min(68ch,100%);
+  /* Plex Mono has no Hebrew. Assistant sits second so Hebrew inside a mono label
+     falls back per glyph to the body face, not to a system monospace. */
+  --font-mono:"IBM Plex Mono","Assistant",ui-monospace,"Courier New",monospace;
+  --gutter:clamp(18px,4vw,40px);
   --wide:min(1080px,100%);
   color-scheme:light;
 }
+/* The prose measure, registered as a length so it resolves once against the body
+   font and inherits as a fixed size. Captions set in a smaller font then share the
+   column's edges instead of computing their own, narrower, 68ch. Where @property
+   is unsupported the value stays a plain 68ch and captions fall back to that. */
+@property --measure{syntax:"<length>";inherits:true;initial-value:608px}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -52,16 +59,22 @@ body{
   line-height:1.72;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
+  --measure:68ch;
 }
 html[data-lang="he"]{direction:rtl}
+/* Hebrew headings are set in Heebo; English headings keep Frank Ruhl Libre. */
+html[data-lang="he"]{--font-display:"Heebo","Assistant",system-ui,sans-serif}
+html[data-lang="he"] h1{font-weight:800;letter-spacing:-.01em}
 html[data-lang="en"]{direction:ltr}
 /* Visibility toggle must beat any later display rule on the same element. */
 html[data-lang="he"] [lang="en"]{display:none!important}
 html[data-lang="en"] [lang="he"]{display:none!important}
 
 /* ---------- shell ---------- */
-.wrap{width:var(--wide);margin-inline:auto;padding-inline:clamp(18px,4vw,40px)}
-.col{width:var(--col);margin-inline:auto}
+.wrap{width:var(--wide);margin-inline:auto;padding-inline:var(--gutter)}
+.col{width:min(var(--measure),100% - 2*var(--gutter));margin-inline:auto}
+.col + .col{margin-top:2.4rem}
+section[id],#contact{scroll-margin-top:var(--anchor-gap,0px)}
 section{padding-block:clamp(44px,6vw,86px)}
 section + section{border-top:1px solid var(--line-soft)}
 .band{background:var(--deep);color:var(--deep-ink);border-top:none!important}
@@ -87,6 +100,14 @@ strong{font-weight:700}
   margin:0 0 1.1em;display:flex;align-items:center;gap:.7em;
 }
 .eyebrow::after{content:"";flex:1;height:1px;background:var(--line);min-width:20px}
+/* Hebrew has no capitals, and tracking pulls its letters apart: labels that are
+   tracked uppercase mono in English are set in the body face in Hebrew. */
+html[data-lang="he"] :is(.eyebrow,.figtitle,thead th){
+  font-family:var(--font-body);font-weight:600;letter-spacing:.03em;font-size:.86rem}
+html[data-lang="he"] :is(.chip,.tl time){font-family:var(--font-body);font-size:.88rem;letter-spacing:0}
+/* Machine strings inside a right-to-left page: each line takes its direction from its
+   own first letter, so a leading "~" or a closing ")" stays where it was typed. */
+html[data-lang="he"] :is(td.n,dl.spec dd){unicode-bidi:plaintext;text-align:right}
 .band .eyebrow{color:#6fc4e4}
 .band .eyebrow::after{background:#243648}
 .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
@@ -115,11 +136,23 @@ nav.sec a:hover{color:var(--signal)}
   padding:.4rem .66rem;border:0;background:transparent;color:var(--ink-soft);cursor:pointer;
 }
 .lang button[aria-pressed="true"]{background:var(--ink);color:#fff}
-@media (max-width:860px){nav.sec{display:none}}
+.lang button[data-set="he"]{font-family:var(--font-body);font-size:.84rem;letter-spacing:0}
+/* Narrow screens: the section links move to a second row that scrolls sideways. */
+@media (max-width:860px){
+  :root{--anchor-gap:56px}
+  .hrow{flex-wrap:wrap;gap:0 1.1rem;min-height:0;padding-top:.55rem}
+  .lang{margin-inline-start:auto}
+  nav.sec{
+    order:3;flex-basis:100%;margin-inline:calc(-1*var(--gutter));
+    padding-inline:var(--gutter);gap:1.3rem;
+    -webkit-mask-image:linear-gradient(to right,transparent,#000 var(--gutter),#000 calc(100% - var(--gutter)),transparent);
+            mask-image:linear-gradient(to right,transparent,#000 var(--gutter),#000 calc(100% - var(--gutter)),transparent);
+  }
+  nav.sec a{padding-block:.5rem}
+}
 
 /* ---------- hero ---------- */
 .hero{padding-block:clamp(48px,7vw,96px) clamp(34px,4vw,54px);border-top:none!important}
-.hero .col{width:min(72ch,100%)}
 .hero h1{margin-bottom:.5em}
 .hero h1 .quiet{display:block;font-size:.44em;font-weight:500;color:var(--signal);
   letter-spacing:.01em;margin-bottom:.5em;font-family:var(--font-body)}
@@ -137,21 +170,29 @@ nav.sec a:hover{color:var(--signal)}
 .chip.cool{border-color:#a9cfdf;background:var(--data-soft);color:#075269}
 
 /* ---------- figures ---------- */
-figure{margin:0;padding-block:clamp(26px,3.4vw,42px)}
+figure{margin:0;padding-block:clamp(26px,3.4vw,42px);padding-inline:var(--gutter)}
 figure svg{display:block;width:100%;height:auto;max-width:960px;margin-inline:auto}
+/* The schematics carry 11-13px labels on a 760-unit canvas. Below about 640px of
+   width those labels stop being readable, so the drawing keeps that width and the
+   frame scrolls sideways, starting from the drawing's own left edge. */
+.figscroll{overflow-x:auto;direction:ltr;margin-inline:calc(-1*var(--gutter));padding-inline:var(--gutter)}
+.figscroll svg{min-width:640px}
 /* The schematics are laid out left-to-right in their own coordinate space.
    Without this, an RTL page flips SVG text anchoring and labels run off the canvas.
    Hebrew still shapes right-to-left inside each label; only the anchor is pinned. */
 figure svg,figure svg text,figure svg tspan{direction:ltr;unicode-bidi:isolate}
+/* ...and a Hebrew label orders itself from its own first letter, so "ה-mRNA" and a
+   closing full stop land on the correct side while the anchor stays left-to-right. */
+figure svg :is(text,tspan)[lang="he"]{font-family:"Assistant",sans-serif;unicode-bidi:plaintext}
 figcaption{
-  width:min(66ch,100%);margin:1.25rem auto 0;font-size:.93rem;line-height:1.6;
+  width:min(var(--measure),100%);margin:1.25rem auto 0;font-size:.93rem;line-height:1.6;
   color:var(--ink-soft);
 }
 figcaption b{color:var(--ink);font-weight:700}
 .band figcaption{color:var(--deep-soft)}
 .band figcaption b{color:var(--deep-ink)}
 .figtitle{
-  width:min(66ch,100%);margin:0 auto 1.1rem;font-family:var(--font-mono);
+  width:min(var(--measure),100%);margin:0 auto 1.1rem;font-family:var(--font-mono);
   font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--data);
 }
 
@@ -195,16 +236,22 @@ figcaption b{color:var(--ink);font-weight:700}
 
 .note{
   border-inline-start:3px solid var(--signal);background:var(--signal-soft);
-  padding:1rem 1.2rem;border-radius:0 8px 8px 0;margin:1.6rem 0;font-size:.95rem;
+  padding:1rem 1.2rem;border-start-end-radius:8px;border-end-end-radius:8px;
+  margin:1.6rem 0;font-size:.95rem;
 }
-html[data-lang="en"] .note{border-radius:0 8px 8px 0}
 .note p{margin:0}
 .note p + p{margin-top:.6em}
 .note.cool{border-color:var(--data);background:var(--data-soft)}
 .band .note{background:#16293c;border-color:#6fc4e4;color:var(--deep-ink)}
 
 /* ---------- tables ---------- */
-.tscroll{overflow-x:auto;margin-top:1.6rem;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.tscroll{overflow-x:auto;margin-top:1.6rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  container-type:inline-size}
+/* Tables with long machine strings get more room than the prose column: they grow
+   outwards symmetrically, up to 980px, and never past the page gutter. */
+.tscroll.wide{margin-inline:min(0px,50% - min(490px,50vw - var(--gutter)))}
+.tscroll.wide table{min-width:700px}
+.tscroll.wide td:nth-child(2){min-width:15rem}
 .band .tscroll{border-color:#223548;background:var(--deep-2)}
 table{border-collapse:collapse;width:100%;font-size:.89rem;min-width:520px}
 th,td{text-align:start;padding:.62rem .85rem;border-bottom:1px solid var(--line-soft);vertical-align:top}
@@ -219,14 +266,19 @@ td.x{color:var(--ink-faint)}
 .band td.y{color:#5cc49a}
 caption{caption-side:bottom;text-align:start;padding:.8rem .85rem;font-size:.84rem;
   color:var(--ink-faint);line-height:1.5}
+/* A caption is as wide as its table, so on a narrow screen it would scroll away with
+   the columns. Its text is held to the visible frame and pinned while the table moves. */
+caption > span{display:block;width:calc(100cqi - 1.7rem);position:sticky;inset-inline-start:.85rem}
 .band caption{color:var(--deep-soft)}
 
 /* ---------- bar chart ---------- */
-.bars{margin-top:1.6rem;display:grid;gap:.95rem}
-.bar{display:grid;grid-template-columns:minmax(8.5rem,auto) 1fr auto;gap:.9rem;align-items:center;font-size:.9rem}
+.bars{margin-top:1.6rem;display:grid;grid-template-columns:fit-content(45%) 1fr auto;gap:.95rem .9rem}
+/* Rows share the parent's columns so every track starts at the same x. */
+.bar{display:grid;grid-template-columns:minmax(8.5rem,auto) 1fr auto;gap:.9rem;align-items:center;font-size:.9rem;
+  grid-column:1/-1;grid-template-columns:subgrid}
 .bar .track{height:12px;border-radius:999px;background:var(--line-soft);overflow:hidden}
 .band .bar .track{background:#1d2f42}
-.bar .fill{height:100%;border-radius:999px;background:var(--data)}
+.bar .fill{display:block;height:100%;border-radius:999px;background:var(--data)}
 .bar.pri .fill{background:var(--signal)}
 .bar .val{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--ink-soft)}
 .band .bar .val{color:var(--deep-soft)}
@@ -403,7 +455,8 @@ footer p{max-width:46ch}
   <figure>
     <p class="figtitle" lang="he">איור 1 — מה הופך מוטציה למטרה</p>
     <p class="figtitle" lang="en">Figure 1 — what turns a mutation into a target</p>
-    <svg viewBox="0 0 760 330" role="img" aria-labelledby="f1t f1d">
+    <div class="figscroll">
+<svg viewBox="0 0 760 330" role="img" aria-labelledby="f1t f1d">
       <title id="f1t"><tspan lang="he">תא בריא מול תא עם מוטציה</tspan></title>
       <desc id="f1d">Side by side: a healthy cell whose MHC presents a familiar peptide and a T cell passes by; a tumour cell whose mutated DNA yields an altered peptide, which the MHC presents and a T cell recognises.</desc>
       <defs>
@@ -500,6 +553,7 @@ footer p{max-width:46ch}
       <text class="lbl2" x="400" y="296" fill="#b8431f" lang="he">משהו זר — התא מסומן להריסה</text>
       <text class="lbl2" x="400" y="296" fill="#b8431f" lang="en">Something foreign — the cell is marked</text>
     </svg>
+    </div>
     <figcaption>
       <span lang="he"><b>שמאל:</b> תא רגיל מציג על פני השטח רק קטעי חלבון שמערכת החיסון מכירה, ותא T עובר לידו בלי לעצור. <b>ימין:</b> מוטציה בדנ״א משנה חומצת אמינו אחת בחלבון. אותו מתלה MHC מציג עכשיו קטע שלא קיים בשום תא אחר בגוף — וזה מה שתא T יכול לזהות. כל התוכנית הזאת היא מאמץ למצוא את הקטעים האלה אצל אלפא ולהגיד למערכת החיסון שלה לאן להסתכל.</span>
       <span lang="en"><b>Left:</b> an ordinary cell presents only protein fragments the immune system knows, and a T cell passes without stopping. <b>Right:</b> a mutation in the DNA changes a single amino acid in a protein. The same MHC cradle now presents a fragment that exists in no other cell in the body — and that is what a T cell can recognise. This whole project is an effort to find those fragments in Alpha and tell her immune system where to look.</span>
@@ -522,7 +576,8 @@ footer p{max-width:46ch}
   <figure>
     <p class="figtitle" lang="he">איור 2 — חיסור הגידול פחות הבריא</p>
     <p class="figtitle" lang="en">Figure 2 — tumour minus normal</p>
-    <svg viewBox="0 0 760 320" role="img" aria-labelledby="f2t f2d">
+    <div class="figscroll">
+<svg viewBox="0 0 760 320" role="img" aria-labelledby="f2t f2d">
       <title id="f2t"><tspan lang="he">השוואת קריאות בין הגידול והדם</tspan></title>
       <desc id="f2d">A reference sequence with two stacks of sequencing reads beneath it. The normal stack matches the reference at every column; the tumour stack carries a different base at one column, which is marked as the somatic mutation.</desc>
       <defs>
@@ -591,6 +646,7 @@ footer p{max-width:46ch}
       <text class="tagT" x="578" y="293" fill="#b8431f" lang="he">מוטציה סומטית: C←T</text>
       <text class="tagT" x="578" y="293" fill="#b8431f" lang="en">somatic mutation: C→T</text>
     </svg>
+    </div>
     <figcaption>
       <span lang="he">כל מלבן הוא קריאה אחת מהמרצף — קטע דנ״א של כ-150 בסיסים, שהמחשב מיישר למקומו על הגנום. בעמודה אחת כל הקריאות מהגידול אומרות <span class="sci">T</span> ואלה מהדם אומרות <span class="sci">C</span>. ההבדל הזה, ורק הוא, הוא מועמד. בפועל הפייפליין בודק כך מיליארדי עמודות, ועל אלפא נדרשות כ-100 קריאות בכל נקודה בגידול וכ-40 בדם כדי שהבדיקה תהיה אמינה.</span>
       <span lang="en">Each rectangle is one read from the sequencer — a DNA fragment of about 150 bases that software aligns to its place on the genome. At one column every tumour read says <span class="sci">T</span> while the blood reads say <span class="sci">C</span>. That difference, and only that, is a candidate. In practice the pipeline examines billions of columns this way, and for Alpha about 100 reads at each point in the tumour and about 40 in the blood are needed for the test to be reliable.</span>
@@ -610,7 +666,8 @@ footer p{max-width:46ch}
   <figure>
     <p class="figtitle" lang="he">איור 3 — אותו פפטיד, שני אללים</p>
     <p class="figtitle" lang="en">Figure 3 — one peptide, two alleles</p>
-    <svg viewBox="0 0 760 290" role="img" aria-labelledby="f3t f3d">
+    <div class="figscroll">
+<svg viewBox="0 0 760 290" role="img" aria-labelledby="f3t f3d">
       <title id="f3t"><tspan lang="he">התאמת פפטיד לתלולית ההצגה</tspan></title>
       <desc id="f3d">The same nine-residue peptide tested against two different DLA grooves: it seats fully into the first, and is blocked by the second because one pocket is the wrong shape.</desc>
       <defs>
@@ -677,6 +734,7 @@ footer p{max-width:46ch}
       <text class="gl" x="420" y="268" lang="he">מועמד מבוזבז</text>
       <text class="gl" x="420" y="268" lang="en">a wasted candidate</text>
     </svg>
+    </div>
     <figcaption>
       <span lang="he">תשעת העיגולים הם פפטיד — קטע חלבון באורך תשע חומצות אמינו, כשהאדום הוא זה שהמוטציה שינתה. לתלולית יש כיסים בעומק ובצורה מסוימים, והפפטיד נתפס בהם כמו מפתח. אותו פפטיד בדיוק נכנס לאלל אחד ונחסם באחר. לכן אי אפשר לבנות חיסון בלי לדעת את האללים של <em>הכלבה הזאת</em>, ולכן חיסון שנבנה לאלפא לא יעבוד על כלב אחר.</span>
       <span lang="en">The nine circles are a peptide — a protein fragment nine amino acids long, the red one being the residue the mutation changed. The groove has pockets of a particular depth and shape, and the peptide is held in them like a key. The very same peptide seats into one allele and is blocked by another. This is why a vaccine cannot be built without knowing <em>this dog's</em> alleles, and why a vaccine built for Alpha will not work for another dog.</span>
@@ -697,7 +755,8 @@ footer p{max-width:46ch}
   <figure>
     <p class="figtitle" lang="he">איור 4 — הפייפליין, עם המספרים מהרצת הניסיון</p>
     <p class="figtitle" lang="en">Figure 4 — the pipeline, with real trial-run numbers</p>
-    <svg viewBox="0 0 760 430" role="img" aria-labelledby="f4t f4d">
+    <div class="figscroll">
+<svg viewBox="0 0 760 430" role="img" aria-labelledby="f4t f4d">
       <title id="f4t"><tspan lang="he">שלבי הפייפליין וההיפוך בכל שלב</tspan></title>
       <desc id="f4d">A funnel of seven pipeline stages from raw reads to two candidate peptides, each bar labelled with the count that survived it in the trial run.</desc>
       <defs>
@@ -781,6 +840,7 @@ footer p{max-width:46ch}
       <line x1="18" y1="392" x2="742" y2="392" stroke="#223548" stroke-width="1"/>
       <text class="fx" x="18" y="414" fill="#7d93a9"><tspan lang="he">המספרים מהרצת הניסיון על כלב ציבורי (אוסטאוסרקומה בפה), גנום ייחוס ראשי UU_Cfam_GSD_1.0, כיסוי מלא.</tspan><tspan lang="en">Numbers from the trial run on a public dog (oral osteosarcoma), primary reference UU_Cfam_GSD_1.0, full coverage.</tspan></text>
     </svg>
+    </div>
     <figcaption>
       <span lang="he">שימו לב למה שקורה בשלב 4: מתוך 171 אלף רשומות גולמיות, פחות מ-4% שורדות. רוב מה שנפסל הוא רעש של שיטת הריצוף, לא ביולוגיה. שלב 7 מנפח שוב את המספר כי כל מוטציה אחת נחתכת לעשרות חלונות באורכים שונים, וכל חלון נבדק בנפרד. בסוף התהליך נשארו שני מועמדים — <b>שניים</b>. זו שכבה דקה מאוד, וזו אחת המגבלות האמיתיות של הגישה.</span>
       <span lang="en">Note what happens at stage 4: of 171,000 raw records, fewer than 4% survive. Most of what is rejected is sequencing-method noise, not biology. Stage 7 inflates the number again because each single mutation is cut into dozens of windows of different lengths, each scored separately. At the end of the process two candidates remained — <b>two</b>. That is a very thin layer, and it is one of the approach's real limitations.</span>
@@ -803,7 +863,8 @@ footer p{max-width:46ch}
   <figure>
     <p class="figtitle" lang="he">איור 5 — מההזרקה לתגובה</p>
     <p class="figtitle" lang="en">Figure 5 — from injection to response</p>
-    <svg viewBox="0 0 760 320" role="img" aria-labelledby="f5t f5d">
+    <div class="figscroll">
+<svg viewBox="0 0 760 320" role="img" aria-labelledby="f5t f5d">
       <title id="f5t"><tspan lang="he">מסלול חיסון ה-mRNA בתוך התא</tspan></title>
       <desc id="f5d">A lipid nanoparticle delivers mRNA into a cell; a ribosome travels along the strand building a peptide chain, the peptide is loaded onto MHC at the surface, and T cells are recruited.</desc>
       <defs>
@@ -849,8 +910,8 @@ footer p{max-width:46ch}
         <circle class="ribo" cx="0" cy="170" r="15"/>
         <circle class="ribo2" cx="0" cy="152" r="11"/>
       </g></g>
-      <text class="el" x="268" y="152" lang="he">ריבוזום קורא</text>
-      <text class="el" x="268" y="152" lang="en">ribosome reads</text>
+      <text class="el" x="196" y="128" lang="he">ריבוזום קורא</text>
+      <text class="el" x="196" y="128" lang="en">ribosome reads</text>
       <!-- growing peptide chain -->
       <g transform="translate(400,118)">
         <path class="mrna chain" d="M0 0h118" stroke-width="3"/>
@@ -888,6 +949,7 @@ footer p{max-width:46ch}
       <text class="el" x="176" y="300" fill="#7c8a9c" lang="he">ה-mRNA מתפרק תוך יום־יומיים ואינו נכנס לגנום.</text>
       <text class="el" x="176" y="300" fill="#7c8a9c" lang="en">The mRNA degrades within a day or two and does not enter the genome.</text>
     </svg>
+    </div>
     <figcaption>
       <span lang="he">אותו מכניזם בדיוק שעמד מאחורי חיסוני ה-mRNA לקורונה — רק שבמקום רצף של חלבון ויראלי, הרצף שמוזרק מקודד את הפפטידים שהגידול של אלפא מייצר ואף תא אחר לא. העיגול האדום בשרשרת הוא חומצת האמינו שהמוטציה שינתה; הוא הסיבה שכל השרשרת הזאת נראית זרה.</span>
       <span lang="en">Exactly the mechanism behind the COVID mRNA vaccines — except that instead of a viral protein sequence, the injected sequence encodes the peptides that Alpha's tumour makes and no other cell does. The red circle in the chain is the amino acid the mutation changed; it is the reason the whole chain looks foreign.</span>
@@ -1112,7 +1174,7 @@ footer p{max-width:46ch}
   <div class="col">
     <h3 lang="he">עיצוב הניתוח</h3>
     <h3 lang="en">Analysis design</h3>
-    <div class="tscroll">
+    <div class="tscroll wide">
       <table>
         <thead><tr>
           <th>#</th>
@@ -1147,9 +1209,9 @@ footer p{max-width:46ch}
   </div>
 
   <div class="col">
-    <h3 style="margin-top:2.6rem" lang="he">גנומי ייחוס</h3>
-    <h3 style="margin-top:2.6rem" lang="en">Reference genomes</h3>
-    <div class="tscroll">
+    <h3 lang="he">גנומי ייחוס</h3>
+    <h3 lang="en">Reference genomes</h3>
+    <div class="tscroll wide">
       <table>
         <caption>
           <span lang="he">הראשי נבחר משתי סיבות בלתי תלויות: הוא היחיד שיש לו משאב תדירויות אללים אוכלוסייתי בשמות שלו עצמו, מה שנדרש לסינון הגרמינלי של Mutect2; ולפי Dog10K, כלבים מטיפוס רועה גרמני חולקים את שיעור האללים הגבוה ביותר עם קלאדים רבים, ולכן זה הייחוס הבודד הטוב ביותר לכלב מעורב. הגזע של אלפא עצמה <em>לא</em> שימש כנימוק.</span>

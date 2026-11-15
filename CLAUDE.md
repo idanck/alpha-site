@@ -70,6 +70,17 @@ see "Deploying" below for why.
 - **Do not reuse page-layout class names inside an SVG.** A CSS rule such as
   `.col { width: ... }` also applies to `<rect class="col">` and overrides its
   width attribute.
+- **One measure.** `--measure` is registered with `@property` so 68ch resolves
+  once against the body font. `.col`, `figcaption` and `.figtitle` all use it;
+  do not give a caption its own `ch` width, or its edges drift off the column.
+- **Every figure SVG sits in a `.figscroll`.** It keeps the drawing at a
+  readable width on narrow screens. A new figure needs the same wrapper.
+- **Tables that hold long machine strings take `.tscroll.wide`.**
+- **Hebrew and monospace.** Plex Mono has no Hebrew. Tracked mono labels switch
+  to the body face under `html[data-lang="he"]`; machine strings use
+  `unicode-bidi:plaintext` so punctuation does not jump sides.
+- **Heading face by language.** Hebrew headings use Heebo, English headings
+  Frank Ruhl Libre; `html[data-lang="he"]` overrides `--font-display`.
 - **Complete at rest.** Animations loop on content that is already visible.
   Nothing waits for a scroll or a click to appear.
 - Respect `prefers-reduced-motion`.
