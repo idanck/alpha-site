@@ -1,12 +1,1413 @@
-<!doctype html>
-<html lang="he" dir="rtl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>alpha-site</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>חיסון לאלפא</title>
+<meta name="description" content="בניית חיסון mRNA מותאם אישית לכלבה אחת עם קרצינומה בכבד — איך זה עובד, מה נבדק, ומה עוד לא עובד. הסבר בעברית ובאנגלית, עם התיעוד המקצועי המלא.">
+<meta property="og:title" content="חיסון לאלפא — A vaccine for Alpha">
+<meta property="og:description" content="Building a personalised mRNA neoantigen vaccine for one dog with liver carcinoma. How it works, what has been tested, and what still does not work.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@700;800&family=Assistant:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f1b2a'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23e0653d' stroke-width='2.6' fill='none' stroke-linejoin='round'/%3E%3Cpath d='M12.4 18.4h7.2' stroke='%2358b8d8' stroke-width='2.2'/%3E%3C/svg%3E">
+<style>
+/* Layout idea: one editorial column of prose, interrupted by full-bleed schematic bands;
+   the professional record sits in a dark "lab" slab at the end. */
+:root{
+  --ink:#0f1b2a;
+  --ink-soft:#4a5b70;
+  --ink-faint:#7c8a9c;
+  --paper:#eceff3;
+  --surface:#ffffff;
+  --line:#d3dbe4;
+  --line-soft:#e3e9ef;
+  --signal:#b8431f;        /* Alpha, the living subject */
+  --signal-soft:#f6e2d9;
+  --data:#0b6a8f;          /* measurement, sequence, code */
+  --data-soft:#dceaf1;
+  --deep:#0c1723;          /* dark bands */
+  --deep-2:#122132;
+  --deep-ink:#dde7f0;
+  --deep-soft:#8ea3b8;
+  --good:#1d6b4f;
+  --warn:#8a6412;
+  --font-display:"Frank Ruhl Libre",Georgia,"Times New Roman",serif;
+  --font-body:"Assistant","Segoe UI",system-ui,-apple-system,sans-serif;
+  /* Plex Mono has no Hebrew. Assistant sits second so Hebrew inside a mono label
+     falls back per glyph to the body face, not to a system monospace. */
+  --font-mono:"IBM Plex Mono","Assistant",ui-monospace,"Courier New",monospace;
+  --gutter:clamp(18px,4vw,40px);
+  --wide:min(1080px,100%);
+  color-scheme:light;
+}
+/* The prose measure, registered as a length so it resolves once against the body
+   font and inherits as a fixed size. Captions set in a smaller font then share the
+   column's edges instead of computing their own, narrower, 68ch. Where @property
+   is unsupported the value stays a plain 68ch and captions fall back to that. */
+@property --measure{syntax:"<length>";inherits:true;initial-value:608px}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-weight:400;
+  font-size:clamp(17px,1.02rem + 0.12vw,19px);
+  line-height:1.72;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  --measure:68ch;
+}
+html[data-lang="he"]{direction:rtl}
+/* Hebrew headings are set in Heebo; English headings keep Frank Ruhl Libre. */
+html[data-lang="he"]{--font-display:"Heebo","Assistant",system-ui,sans-serif}
+html[data-lang="he"] h1{font-weight:800;letter-spacing:-.01em}
+html[data-lang="en"]{direction:ltr}
+/* Visibility toggle must beat any later display rule on the same element. */
+html[data-lang="he"] [lang="en"]{display:none!important}
+html[data-lang="en"] [lang="he"]{display:none!important}
+
+/* ---------- shell ---------- */
+.wrap{width:var(--wide);margin-inline:auto;padding-inline:var(--gutter)}
+.col{width:min(var(--measure),100% - 2*var(--gutter));margin-inline:auto}
+.col + .col{margin-top:2.4rem}
+section[id],#contact{scroll-margin-top:var(--anchor-gap,0px)}
+section{padding-block:clamp(44px,6vw,86px)}
+section + section{border-top:1px solid var(--line-soft)}
+.band{background:var(--deep);color:var(--deep-ink);border-top:none!important}
+.band + section{border-top:none}
+
+/* ---------- type ---------- */
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:700;line-height:1.14;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.3rem,1.5rem + 3.4vw,4.1rem);font-weight:900;letter-spacing:-.015em}
+h2{font-size:clamp(1.6rem,1.2rem + 1.5vw,2.35rem);margin-bottom:.5em}
+h3{font-size:clamp(1.18rem,1.05rem + .5vw,1.4rem);margin-bottom:.35em}
+h4{font-size:1.02rem;font-family:var(--font-body);font-weight:700;letter-spacing:.01em;margin-bottom:.2em}
+p{margin:0 0 1.05em}
+p:last-child{margin-bottom:0}
+a{color:var(--data);text-underline-offset:3px;text-decoration-thickness:1px}
+a:hover{color:var(--signal)}
+:focus-visible{outline:2.5px solid var(--data);outline-offset:3px;border-radius:3px}
+.band :focus-visible{outline-color:#6fc4e4}
+strong{font-weight:700}
+.lead{font-size:clamp(1.1rem,1rem + .55vw,1.33rem);line-height:1.62;color:var(--ink-soft)}
+.eyebrow{
+  font-family:var(--font-mono);font-size:.74rem;font-weight:500;
+  letter-spacing:.17em;text-transform:uppercase;color:var(--data);
+  margin:0 0 1.1em;display:flex;align-items:center;gap:.7em;
+}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line);min-width:20px}
+/* Hebrew has no capitals, and tracking pulls its letters apart: labels that are
+   tracked uppercase mono in English are set in the body face in Hebrew. */
+html[data-lang="he"] :is(.eyebrow,.figtitle,thead th){
+  font-family:var(--font-body);font-weight:600;letter-spacing:.03em;font-size:.86rem}
+html[data-lang="he"] :is(.chip,.tl time){font-family:var(--font-body);font-size:.88rem;letter-spacing:0}
+/* Machine strings inside a right-to-left page: each line takes its direction from its
+   own first letter, so a leading "~" or a closing ")" stays where it was typed. */
+html[data-lang="he"] :is(td.n,dl.spec dd){unicode-bidi:plaintext;text-align:right}
+.band .eyebrow{color:#6fc4e4}
+.band .eyebrow::after{background:#243648}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.sci{font-family:var(--font-mono);font-size:.93em;background:var(--data-soft);
+  padding:.08em .34em;border-radius:3px;white-space:nowrap}
+.band .sci{background:#1b2d41;color:#9fd4e8}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:40;
+  background:color-mix(in srgb,var(--paper) 88%,transparent);
+  backdrop-filter:saturate(1.3) blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.hrow{display:flex;align-items:center;gap:1.1rem;min-height:58px}
+.mark{display:flex;align-items:center;gap:.55rem;font-family:var(--font-display);
+  font-weight:900;font-size:1.06rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink)}
+.mark svg{flex:none}
+nav.sec{display:flex;gap:1.15rem;margin-inline-start:auto;overflow-x:auto;scrollbar-width:none}
+nav.sec::-webkit-scrollbar{display:none}
+nav.sec a{font-size:.9rem;color:var(--ink-soft);text-decoration:none;white-space:nowrap;padding-block:4px}
+nav.sec a:hover{color:var(--signal)}
+.lang{display:flex;flex:none;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.lang button{
+  font-family:var(--font-mono);font-size:.76rem;font-weight:500;letter-spacing:.06em;
+  padding:.4rem .66rem;border:0;background:transparent;color:var(--ink-soft);cursor:pointer;
+}
+.lang button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.lang button[data-set="he"]{font-family:var(--font-body);font-size:.84rem;letter-spacing:0}
+/* Narrow screens: the section links move to a second row that scrolls sideways. */
+@media (max-width:860px){
+  :root{--anchor-gap:56px}
+  .hrow{flex-wrap:wrap;gap:0 1.1rem;min-height:0;padding-top:.55rem}
+  .lang{margin-inline-start:auto}
+  nav.sec{
+    order:3;flex-basis:100%;margin-inline:calc(-1*var(--gutter));
+    padding-inline:var(--gutter);gap:1.3rem;
+    -webkit-mask-image:linear-gradient(to right,transparent,#000 var(--gutter),#000 calc(100% - var(--gutter)),transparent);
+            mask-image:linear-gradient(to right,transparent,#000 var(--gutter),#000 calc(100% - var(--gutter)),transparent);
+  }
+  nav.sec a{padding-block:.5rem}
+}
+
+/* ---------- hero ---------- */
+.hero{padding-block:clamp(48px,7vw,96px) clamp(34px,4vw,54px);border-top:none!important}
+.hero h1{margin-bottom:.5em}
+.hero h1 .quiet{display:block;font-size:.44em;font-weight:500;color:var(--signal);
+  letter-spacing:.01em;margin-bottom:.5em;font-family:var(--font-body)}
+.hero .lead{margin-bottom:1.5em}
+.status{
+  display:flex;flex-wrap:wrap;gap:.5rem .55rem;align-items:center;
+  padding-top:1.3rem;border-top:1px solid var(--line);
+}
+.chip{
+  font-family:var(--font-mono);font-size:.76rem;letter-spacing:.02em;
+  padding:.3rem .62rem;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink-soft);
+}
+.chip.hot{border-color:#e8b9a6;background:var(--signal-soft);color:#8e3215}
+.chip.cool{border-color:#a9cfdf;background:var(--data-soft);color:#075269}
+
+/* ---------- figures ---------- */
+figure{margin:0;padding-block:clamp(26px,3.4vw,42px);padding-inline:var(--gutter)}
+figure svg{display:block;width:100%;height:auto;max-width:960px;margin-inline:auto}
+/* The schematics carry 11-13px labels on a 760-unit canvas. Below about 640px of
+   width those labels stop being readable, so the drawing keeps that width and the
+   frame scrolls sideways, starting from the drawing's own left edge. */
+.figscroll{overflow-x:auto;direction:ltr;margin-inline:calc(-1*var(--gutter));padding-inline:var(--gutter)}
+.figscroll svg{min-width:640px}
+/* The schematics are laid out left-to-right in their own coordinate space.
+   Without this, an RTL page flips SVG text anchoring and labels run off the canvas.
+   Hebrew still shapes right-to-left inside each label; only the anchor is pinned. */
+figure svg,figure svg text,figure svg tspan{direction:ltr;unicode-bidi:isolate}
+/* ...and a Hebrew label orders itself from its own first letter, so "ה-mRNA" and a
+   closing full stop land on the correct side while the anchor stays left-to-right. */
+figure svg :is(text,tspan)[lang="he"]{font-family:"Assistant",sans-serif;unicode-bidi:plaintext}
+figcaption{
+  width:min(var(--measure),100%);margin:1.25rem auto 0;font-size:.93rem;line-height:1.6;
+  color:var(--ink-soft);
+}
+figcaption b{color:var(--ink);font-weight:700}
+.band figcaption{color:var(--deep-soft)}
+.band figcaption b{color:var(--deep-ink)}
+.figtitle{
+  width:min(var(--measure),100%);margin:0 auto 1.1rem;font-family:var(--font-mono);
+  font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--data);
+}
+
+/* ---------- timeline ---------- */
+.tl{list-style:none;margin:1.6rem 0 0;padding:0;position:relative}
+.tl::before{content:"";position:absolute;inset-block:.6rem;inset-inline-start:5.9rem;
+  width:2px;background:var(--line)}
+.tl li{position:relative;display:grid;grid-template-columns:5.9rem 1fr;gap:0 1.5rem;
+  padding-bottom:1.35rem}
+.tl time{font-family:var(--font-mono);font-size:.8rem;color:var(--ink-faint);
+  padding-top:.32em;font-variant-numeric:tabular-nums}
+.tl .dot{position:absolute;inset-inline-start:calc(5.9rem - 4px);top:.62em;
+  width:10px;height:10px;border-radius:50%;background:var(--paper);
+  border:2.5px solid var(--data);z-index:1}
+.tl li.key .dot{border-color:var(--signal);background:var(--signal)}
+.tl h4{margin-bottom:.1em}
+.tl p{font-size:.95rem;color:var(--ink-soft);margin:0}
+@media (max-width:560px){
+  .tl::before{inset-inline-start:4px}
+  .tl li{grid-template-columns:1fr;gap:.1rem;padding-inline-start:1.6rem}
+  .tl .dot{inset-inline-start:0}
+}
+
+/* ---------- cards & grids ---------- */
+.grid{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;margin-top:1.6rem}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(248px,1fr))}
+.grid.three{grid-template-columns:repeat(auto-fit,minmax(214px,1fr))}
+.cell{background:var(--surface);padding:1.15rem 1.25rem}
+.cell h4{color:var(--ink)}
+.cell p{font-size:.93rem;color:var(--ink-soft);margin:0}
+.cell .big{font-family:var(--font-mono);font-size:1.75rem;font-weight:500;
+  color:var(--data);display:block;line-height:1.15;margin-bottom:.1em;
+  font-variant-numeric:tabular-nums}
+.cell .big.sig{color:var(--signal)}
+.band .grid{background:#223548;border-color:#223548}
+.band .cell{background:var(--deep-2)}
+.band .cell h4{color:var(--deep-ink)}
+.band .cell p{color:var(--deep-soft)}
+.band .cell .big{color:#6fc4e4}
+
+.note{
+  border-inline-start:3px solid var(--signal);background:var(--signal-soft);
+  padding:1rem 1.2rem;border-start-end-radius:8px;border-end-end-radius:8px;
+  margin:1.6rem 0;font-size:.95rem;
+}
+.note p{margin:0}
+.note p + p{margin-top:.6em}
+.note.cool{border-color:var(--data);background:var(--data-soft)}
+.band .note{background:#16293c;border-color:#6fc4e4;color:var(--deep-ink)}
+
+/* ---------- tables ---------- */
+.tscroll{overflow-x:auto;margin-top:1.6rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  container-type:inline-size}
+/* Tables with long machine strings get more room than the prose column: they grow
+   outwards symmetrically, up to 980px, and never past the page gutter. */
+.tscroll.wide{margin-inline:min(0px,50% - min(490px,50vw - var(--gutter)))}
+.tscroll.wide table{min-width:700px}
+.tscroll.wide td:nth-child(2){min-width:15rem}
+.band .tscroll{border-color:#223548;background:var(--deep-2)}
+table{border-collapse:collapse;width:100%;font-size:.89rem;min-width:520px}
+th,td{text-align:start;padding:.62rem .85rem;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.band th,.band td{border-color:#1d2f42}
+thead th{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-faint);font-weight:500;white-space:nowrap}
+.band thead th{color:var(--deep-soft)}
+tbody tr:last-child td{border-bottom:0}
+td.n{font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.y{color:var(--good);font-weight:700}
+td.x{color:var(--ink-faint)}
+.band td.y{color:#5cc49a}
+caption{caption-side:bottom;text-align:start;padding:.8rem .85rem;font-size:.84rem;
+  color:var(--ink-faint);line-height:1.5}
+/* A caption is as wide as its table, so on a narrow screen it would scroll away with
+   the columns. Its text is held to the visible frame and pinned while the table moves. */
+caption > span{display:block;width:calc(100cqi - 1.7rem);position:sticky;inset-inline-start:.85rem}
+.band caption{color:var(--deep-soft)}
+
+/* ---------- bar chart ---------- */
+.bars{margin-top:1.6rem;display:grid;grid-template-columns:fit-content(45%) 1fr auto;gap:.95rem .9rem}
+/* Rows share the parent's columns so every track starts at the same x. */
+.bar{display:grid;grid-template-columns:minmax(8.5rem,auto) 1fr auto;gap:.9rem;align-items:center;font-size:.9rem;
+  grid-column:1/-1;grid-template-columns:subgrid}
+.bar .track{height:12px;border-radius:999px;background:var(--line-soft);overflow:hidden}
+.band .bar .track{background:#1d2f42}
+.bar .fill{display:block;height:100%;border-radius:999px;background:var(--data)}
+.bar.pri .fill{background:var(--signal)}
+.bar .val{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--ink-soft)}
+.band .bar .val{color:var(--deep-soft)}
+
+/* ---------- misc ---------- */
+.ul{margin:1.2rem 0 0;padding-inline-start:1.25rem}
+.ul li{margin-bottom:.55em}
+.ul li::marker{color:var(--data)}
+.band .ul li::marker{color:#6fc4e4}
+dl.spec{margin:1.6rem 0 0;display:grid;grid-template-columns:auto 1fr;gap:.55rem 1.4rem;font-size:.92rem}
+dl.spec dt{font-weight:700;color:var(--deep-ink);white-space:nowrap}
+dl.spec dd{margin:0;color:var(--deep-soft);font-family:var(--font-mono);font-size:.86rem;line-height:1.6}
+@media (max-width:560px){dl.spec{grid-template-columns:1fr;gap:.1rem 0}dl.spec dd{margin-bottom:.7rem}}
+
+footer{background:var(--deep);color:var(--deep-soft);padding-block:clamp(36px,4vw,56px);font-size:.9rem}
+footer a{color:#6fc4e4}
+footer .frow{display:flex;flex-wrap:wrap;gap:1.6rem;justify-content:space-between;align-items:flex-start}
+footer p{max-width:46ch}
+.disclaimer{font-size:.85rem;line-height:1.62;color:#7d93a9;border-top:1px solid #1d2f42;
+  margin-top:1.9rem;padding-top:1.2rem;max-width:72ch}
+
+/* ---------- animation ---------- */
+@keyframes trav{0%{offset-distance:0%}100%{offset-distance:100%}}
+@keyframes pulse{0%,100%{opacity:.25;r:5}50%{opacity:1;r:8}}
+@keyframes flash{0%,72%,100%{opacity:0}18%,56%{opacity:1}}
+@keyframes sweepx{0%{transform:translateX(0)}100%{transform:translateX(var(--sx,120px))}}
+@keyframes nudge{0%,100%{transform:translate(0,0)}48%,62%{transform:translate(var(--nx,0),var(--ny,0))}}
+@keyframes grow{0%{stroke-dashoffset:var(--dl,200)}70%,100%{stroke-dashoffset:0}}
+@keyframes glow{0%,100%{opacity:.18}50%{opacity:.62}}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes dashmove{to{stroke-dashoffset:-28}}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;animation-iteration-count:1!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hrow">
+    <a class="mark" href="#top">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#0f1b2a"/>
+        <path d="M9 23 16 9l7 14" stroke="#e0653d" stroke-width="2.6" fill="none" stroke-linejoin="round"/>
+        <path d="M12.4 18.4h7.2" stroke="#58b8d8" stroke-width="2.2"/>
+      </svg>
+      <span lang="he">חיסון לאלפא</span>
+      <span lang="en">A vaccine for Alpha</span>
+    </a>
+    <nav class="sec" aria-label="ניווט בעמוד">
+      <a href="#alpha"><span lang="he">אלפא</span><span lang="en">Alpha</span></a>
+      <a href="#idea"><span lang="he">הרעיון</span><span lang="en">The idea</span></a>
+      <a href="#how"><span lang="he">איך זה עובד</span><span lang="en">How it works</span></a>
+      <a href="#tested"><span lang="he">מה נבדק</span><span lang="en">What was tested</span></a>
+      <a href="#limits"><span lang="he">מה לא עובד</span><span lang="en">What fails</span></a>
+      <a href="#record"><span lang="he">לאנשי מקצוע</span><span lang="en">For professionals</span></a>
+    </nav>
+    <div class="lang" role="group" aria-label="Language / שפה">
+      <button type="button" data-set="he" aria-pressed="true">עברית</button>
+      <button type="button" data-set="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="col">
+    <h1>
+      <span class="quiet" lang="he">פרויקט פרטי, כלבה אחת</span>
+      <span class="quiet" lang="en">A private project, one dog</span>
+      <span lang="he">חיסון שנבנה בשביל אלפא</span>
+      <span lang="en">A vaccine built for Alpha</span>
+    </h1>
+    <p class="lead" lang="he">אלפא היא רועה גרמני מעורבת בת 12, והוציאו לה גידול מהכבד. האבחנה היא קרצינומה. במקביל לטיפול הווטרינרי שהיא מקבלת, התחלתי לבנות לה חיסון mRNA מותאם אישית — כזה שמבוסס על המוטציות הספציפיות של הגידול שלה ועל אללי ההצגה שלה. העמוד הזה מסביר מה זה אומר, איך עושים את זה בפועל, ובאותה מידה — מה עדיין לא עובד.</p>
+    <p class="lead" lang="en">Alpha is a 12-year-old mixed German Shepherd. A mass was removed from her liver and the diagnosis is carcinoma. Alongside the veterinary care she receives, I began building her a personalised mRNA vaccine — one based on her tumour's own mutations and her own presenting alleles. This page explains what that means, how it is actually done, and in equal measure what still does not work.</p>
+    <div class="status">
+      <span class="chip hot" lang="he">שלב: ריצוף הוזמן</span>
+      <span class="chip hot" lang="en">Stage: sequencing ordered</span>
+      <span class="chip cool" lang="he">הפייפליין: נבדק מקצה לקצה</span>
+      <span class="chip cool" lang="en">Pipeline: tested end to end</span>
+      <span class="chip" lang="he">עודכן נובמבר 2026</span>
+      <span class="chip" lang="en">Updated November 2026</span>
+      <span class="chip" lang="he">נכתב ומתוחזק בידי עידן כהן</span>
+      <span class="chip" lang="en">Written and maintained by Idan Cohen</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ALPHA ============ -->
+<section id="alpha">
+  <div class="col">
+    <p class="eyebrow"><span lang="he">מי זו אלפא</span><span lang="en">Who Alpha is</span></p>
+    <h2 lang="he">כלבה אחת, לא מקרה מספר</h2>
+    <h2 lang="en">One dog, not a case number</h2>
+    <p lang="he">אלפא נולדה בפברואר 2014. בבדיקה גנטית מסחרית היא יצאה 55% רועה גרמני מתוך תערובת של 18 גזעים, ושיעור ההטרוזיגוטיות שלה 47% — פרט שיתברר כחשוב מאוחר יותר, כי הוא אומר שלשני העותקים של הגנים שלה יש לעיתים גרסאות שונות. היא מסורסת, שוקלת 31 קילו, יש לה דיספלזיה בשני המפרקים האחוריים ושני ניתוחי צלבים מאחוריה.</p>
+    <p lang="en">Alpha was born in February 2014. A commercial genotyping panel put her at 55% German Shepherd out of a mix of 18 breeds, with 47% heterozygosity — a detail that matters later, because it means the two copies of her genes often carry different versions. She is spayed, weighs 31 kg, has dysplasia in both hind joints and two cruciate repairs behind her.</p>
+    <p lang="he">ההיסטוריה שלה לא התחילה בכבד. ב-2023 נמצאו אנזימי כבד גבוהים וכבד שנראה "מנומר" באולטרסאונד, בלי מסה. ב-2025 הוסרה ממנה סרקומה של רקמה רכה בדרגה נמוכה. מ-2024 הטסיות שלה גבוהות באופן קבוע. העלייה בטסיות היא מה ששלח אותה לאולטרסאונד שמצא את הגידול.</p>
+    <p lang="en">Her history did not begin in the liver. In 2023 raised liver enzymes were found, with a mottled-looking liver on ultrasound and no mass. In 2025 a low-grade soft-tissue sarcoma was removed. Since 2024 her platelets have been persistently above range. That platelet rise is what sent her for the ultrasound that found the tumour.</p>
+
+    <ol class="tl">
+      <li>
+        <span class="dot"></span><time datetime="2026-09-02"><span lang="he">2 ספט׳ 2026</span><span lang="en">2 Sep 2026</span></time>
+        <div>
+          <h4 lang="he">אולטרסאונד: מסה בכבד</h4>
+          <h4 lang="en">Ultrasound: a mass in the liver</h4>
+          <p lang="he">מסה בגודל 3×3 ס״מ בשליש הרחיק של אונת הכבד הימנית, בגודל ובמקום שמאפשרים הסרה כירורגית.</p>
+          <p lang="en">A 3 × 3 cm mass in the distal third of the right liver lobe, in a size and place that allow surgical removal.</p>
+        </div>
+      </li>
+      <li class="key">
+        <span class="dot"></span><time datetime="2026-09-08"><span lang="he">8 ספט׳ 2026</span><span lang="en">8 Sep 2026</span></time>
+        <div>
+          <h4 lang="he">ניתוח</h4>
+          <h4 lang="en">Surgery</h4>
+          <p lang="he">השליש הרחיק של האונה הוסר עם המסה המרכזית, "עד כמה שניתן". המנתח תיאר גם התעבות לאורך כל שולי האונה, מספר מוקדים קטנים לרוחבה ומוקדים באונה הסמוכה. צילום חזה באותו יום היה תקין. את השוליים אי אפשר להעריך, כי חלק מהרקמה שהוסרה נשלח להפקת DNA ו-RNA.</p>
+          <p lang="en">The distal third of the lobe was removed with the central mass, "as far as possible". The surgeon also described thickening along the whole margin of the lobe, several small foci across it and foci in the adjacent lobe. A chest radiograph the same day was normal. Margins cannot be assessed, because part of the resected tissue went to DNA and RNA extraction.</p>
+        </div>
+      </li>
+      <li>
+        <span class="dot"></span><time datetime="2026-09-18"><span lang="he">18–20 ספט׳</span><span lang="en">18–20 Sep</span></time>
+        <div>
+          <h4 lang="he">סיבוך אחרי הניתוח</h4>
+          <h4 lang="en">A post-operative complication</h4>
+          <p lang="he">פריטוניטיס אספטי עם הפרשה מהחתך, ואשפוז במרכז הפניות. הדלקת נסוגה, אבל סמני הדלקת לא חזרו לנורמה במשך שבועות.</p>
+          <p lang="en">Aseptic peritonitis with incisional discharge, and admission to a referral centre. The inflammation settled, but inflammatory markers did not return to normal for weeks.</p>
+        </div>
+      </li>
+      <li class="key">
+        <span class="dot"></span><time datetime="2026-09-15"><span lang="he">15 ספט׳ 2026</span><span lang="en">15 Sep 2026</span></time>
+        <div>
+          <h4 lang="he">פתולוגיה: קרצינומה</h4>
+          <h4 lang="en">Histopathology: carcinoma</h4>
+          <p lang="he">האבחנה: קרצינומה, המתאימה ביותר לקרצינומה הפטוצלולרית-כולנגיוצלולרית משולבת — כלומר גידול ראשוני של הכבד, שמורכב גם מתאי כבד וגם ממבנים של דרכי המרה. הפתולוג העיר שאין לו נתונים על פוטנציאל הגרורות של הווריאנט הזה.</p>
+          <p lang="en">The diagnosis: carcinoma, most compatible with combined hepatocellular-cholangiocellular carcinoma — a primary liver tumour made of both liver cells and biliary structures. The pathologist noted he has no data on this variant's metastatic potential.</p>
+        </div>
+      </li>
+      <li>
+        <span class="dot"></span><time datetime="2026-10-11"><span lang="he">11 אוק׳ 2026</span><span lang="en">11 Oct 2026</span></time>
+        <div>
+          <h4 lang="he">תוספת לדוח הפתולוגיה</h4>
+          <h4 lang="en">Pathology addendum</h4>
+          <p lang="he">אינדקס מיטוטי נמוך מ-1 ל-10 שדות בהגדלה גבוהה; לא נראתה חדירה לכלי דם; אין נמק משמעותי. שלושת הסימנים האלה, יחד, הם הצד הטוב של התמונה.</p>
+          <p lang="en">Mitotic index below 1 per 10 high-power fields; no vascular invasion seen; no significant necrosis. Those three findings together are the favourable side of the picture.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="note">
+      <p lang="he"><strong>למה בכלל לבנות חיסון, אם הגידול הוסר.</strong> כי לא ידוע אם הוסר כולו. השוליים לא ניתנים להערכה, המנתח ראה מוקדים נוספים שלא נדגמו, ובלוטות הלימפה התת-מותניות מוגדלות. הגידול הזה גם לא מגיב טוב לכימותרפיה, ומעכבי נקודות בקרה — התרופה שמשלימה את הגישה הזאת בבני אדם ובניסויים בכלבים — אינם זמינים לכלבים בישראל. חיסון מותאם אישית הוא קו הגנה שאפשר להתחיל לבנות עכשיו, בזמן שהיא בריאה יחסית, כדי שיהיה מוכן אם וכאשר.</p>
+      <p lang="en"><strong>Why build a vaccine at all, if the tumour was removed.</strong> Because it is not known whether all of it was removed. Margins cannot be assessed, the surgeon saw further foci that were not sampled, and the sublumbar lymph nodes are enlarged. This tumour also responds poorly to chemotherapy, and checkpoint inhibitors — the drug that completes this approach in humans and in canine trials — are not available for dogs in Israel. A personalised vaccine is a line of defence that can be built now, while she is relatively well, so that it is ready if and when.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THE IDEA ============ -->
+<section id="idea">
+  <div class="col">
+    <p class="eyebrow"><span lang="he">הרעיון</span><span lang="en">The idea</span></p>
+    <h2 lang="he">סרטן הוא עצמי — חוץ מהטעויות שלו</h2>
+    <h2 lang="en">Cancer is self — except for its mistakes</h2>
+    <p lang="he">מערכת החיסון טובה מאוד בזיהוי דברים זרים, וגרועה מאוד בזיהוי סרטן. הסיבה פשוטה: תא סרטני הוא תא של הגוף עצמו. הוא לא נראה כמו חיידק ולא כמו וירוס. כמעט כל חלבון שהוא מייצר הוא חלבון שהגוף מכיר ולמד להתעלם ממנו.</p>
+    <p lang="en">The immune system is very good at spotting foreign things and very bad at spotting cancer. The reason is simple: a cancer cell is the body's own cell. It does not look like a bacterium or a virus. Almost every protein it makes is a protein the body knows and has learned to ignore.</p>
+    <p lang="he">אבל "כמעט". מה שהופך תא לסרטני הוא מוטציות — שינויים בדנ״א שהצטברו רק בתא הזה. חלק מהמוטציות האלה משנות חלבון: במקום חומצת אמינו אחת מופיעה אחרת, או שהקריאה של הגן נדחפת ומכאן והלאה כל החלבון שונה. התוצאה היא קטע חלבון שלא קיים בשום מקום אחר בגוף של אלפא. קטע כזה נקרא <strong>ניאו-אנטיגן</strong>, והוא הדבר היחיד בתא הסרטני שאפשר באמת לקרוא לו זר.</p>
+    <p lang="en">But "almost". What makes a cell cancerous are mutations — changes in the DNA that accumulated in that cell alone. Some of those mutations change a protein: one amino acid is replaced by another, or the reading of the gene is shifted and from that point on the whole protein differs. The result is a stretch of protein that exists nowhere else in Alpha's body. Such a stretch is called a <strong>neoantigen</strong>, and it is the only thing in a cancer cell that can genuinely be called foreign.</p>
+    <p lang="he">כל תא בגוף מציג כל הזמן דגימות מהחלבונים שבתוכו על פני השטח שלו, במתלה מולקולרי שנקרא MHC — בכלבים קוראים לו DLA. זה כמו לוח מודעות קטן: "אלה החלבונים שאני מייצר". תאי T מסתובבים וקוראים את הלוחות האלה. אם מופיע שם משהו שלא מוכר להם, הם הורגים את התא.</p>
+    <p lang="en">Every cell in the body constantly displays samples of the proteins inside it on its surface, in a molecular cradle called MHC — in dogs, DLA. It works like a small noticeboard: "these are the proteins I make". T cells patrol and read those boards. If something unfamiliar appears, they kill the cell.</p>
+    <p lang="he">אז למה הגידול של אלפא עוד קיים? כי מערכת החיסון שלה כנראה לא שמה לב. התגובה חלשה מדי, או שהתאים שיכלו להגיב מעולם לא התעוררו. מה שחיסון ניאו-אנטיגני עושה הוא פשוט להצביע: לקחת את הקטעים הזרים שהגידול מייצר, להכניס אותם למערכת בכמות גדולה ובהקשר דלקתי, ולגרום למערכת החיסון להתייחס אליהם ברצינות.</p>
+    <p lang="en">So why does Alpha's tumour still exist? Because her immune system probably did not notice. The response is too weak, or the cells that could have responded never woke up. What a neoantigen vaccine does is simply to point: take the foreign stretches the tumour makes, introduce them into the system in quantity and in an inflammatory context, and make the immune system take them seriously.</p>
+  </div>
+
+  <figure>
+    <p class="figtitle" lang="he">איור 1 — מה הופך מוטציה למטרה</p>
+    <p class="figtitle" lang="en">Figure 1 — what turns a mutation into a target</p>
+    <div class="figscroll">
+<svg viewBox="0 0 760 330" role="img" aria-labelledby="f1t f1d">
+      <title id="f1t"><tspan lang="he">תא בריא מול תא עם מוטציה</tspan></title>
+      <desc id="f1d">Side by side: a healthy cell whose MHC presents a familiar peptide and a T cell passes by; a tumour cell whose mutated DNA yields an altered peptide, which the MHC presents and a T cell recognises.</desc>
+      <defs>
+        <style>
+          .cm{fill:none;stroke:#0f1b2a;stroke-width:2.2}
+          .cf{fill:#ffffff}
+          .nuc{fill:#eceff3;stroke:#0f1b2a;stroke-width:1.6}
+          .hx{fill:none;stroke:#0b6a8f;stroke-width:2.4;stroke-linecap:round}
+          .rung{stroke:#9fc2d3;stroke-width:1.5}
+          .lbl{font:500 12px "IBM Plex Mono",monospace;fill:#4a5b70}
+          .lbl2{font:700 13px "Assistant",sans-serif;fill:#0f1b2a}
+          .ok{fill:#0b6a8f}
+          .bad{fill:#b8431f}
+          .arr{fill:none;stroke:#7c8a9c;stroke-width:1.8;stroke-dasharray:5 4}
+          .tcell{fill:#f3f6f8;stroke:#0f1b2a;stroke-width:1.8}
+          .mut{animation:flash 4.4s ease-in-out infinite}
+          .lock{animation:glow 4.4s ease-in-out infinite}
+          .drifting{animation:drift 6s ease-in-out infinite}
+          .travel{animation:dashmove 1.6s linear infinite}
+        </style>
+      </defs>
+
+      <!-- divider -->
+      <line x1="380" y1="28" x2="380" y2="302" stroke="#d3dbe4" stroke-width="1.5" stroke-dasharray="4 5"/>
+
+      <!-- ---------- LEFT: healthy ---------- -->
+      <text class="lbl" x="34" y="30">HEALTHY CELL</text>
+      <path class="cf cm" d="M34 48h300a20 20 0 0 1 20 20v180a20 20 0 0 1-20 20H34a20 20 0 0 1-20-20V68a20 20 0 0 1 20-20z"/>
+      <!-- nucleus + dna -->
+      <ellipse class="nuc" cx="118" cy="128" rx="74" ry="52"/>
+      <path class="hx" d="M70 128c12-22 24-22 36 0s24 22 36 0 24-22 36 0"/>
+      <path class="hx" d="M70 128c12 22 24 22 36 0s24-22 36 0 24 22 36 0" opacity=".55"/>
+      <g class="rung"><line x1="88" y1="118" x2="88" y2="138"/><line x1="118" y1="118" x2="118" y2="138"/><line x1="148" y1="118" x2="148" y2="138"/><line x1="178" y1="118" x2="178" y2="138"/></g>
+      <text class="lbl" x="78" y="200">DNA</text>
+      <!-- arrow to surface -->
+      <path class="arr travel" d="M196 150C236 168 252 190 268 206"/>
+      <!-- peptide chain (self) -->
+      <g transform="translate(236,232)">
+        <circle class="ok" cx="0" cy="0" r="6"/><circle class="ok" cx="15" cy="-4" r="6"/>
+        <circle class="ok" cx="30" cy="0" r="6"/><circle class="ok" cx="45" cy="-4" r="6"/>
+        <circle class="ok" cx="60" cy="0" r="6"/>
+      </g>
+      <!-- MHC cradle on membrane -->
+      <path d="M268 68 v-18 h14 l8-12 8 12h14 v18" fill="none" stroke="#0f1b2a" stroke-width="2.2" stroke-linejoin="round"/>
+      <g transform="translate(276,40)">
+        <circle class="ok" cx="0" cy="0" r="5"/><circle class="ok" cx="12" cy="-3" r="5"/>
+        <circle class="ok" cx="24" cy="0" r="5"/><circle class="ok" cx="36" cy="-3" r="5"/>
+      </g>
+      <text class="lbl" x="246" y="100">MHC / DLA</text>
+      <!-- T cell passing. Outer g holds the position; the CSS animation sits on the
+           inner g, because a CSS transform would otherwise replace the attribute. -->
+      <g transform="translate(316,-6)"><g class="drifting">
+        <circle class="tcell" cx="0" cy="36" r="24"/>
+        <path d="M-10 14l-5-9M0 12v-10M10 14l5-9" stroke="#0f1b2a" stroke-width="1.8" fill="none"/>
+        <text class="lbl" x="-14" y="41" style="font-size:11px">T</text>
+      </g></g>
+      <text class="lbl2" x="34" y="296" lang="he">הכול מוכר — התא נשאר בחיים</text>
+      <text class="lbl2" x="34" y="296" lang="en">All familiar — the cell is left alone</text>
+
+      <!-- ---------- RIGHT: tumour ---------- -->
+      <text class="lbl" x="400" y="30" fill="#b8431f">TUMOUR CELL</text>
+      <path class="cf cm" d="M400 48h300a20 20 0 0 1 20 20v180a20 20 0 0 1-20 20H400a20 20 0 0 1-20-20V68a20 20 0 0 1 20-20z" stroke="#b8431f"/>
+      <ellipse class="nuc" cx="484" cy="128" rx="74" ry="52" stroke="#b8431f"/>
+      <path class="hx" d="M436 128c12-22 24-22 36 0s24 22 36 0 24-22 36 0"/>
+      <path class="hx" d="M436 128c12 22 24 22 36 0s24-22 36 0 24 22 36 0" opacity=".55"/>
+      <g class="rung"><line x1="454" y1="118" x2="454" y2="138"/><line x1="514" y1="118" x2="514" y2="138"/><line x1="544" y1="118" x2="544" y2="138"/></g>
+      <!-- the mutation -->
+      <line x1="484" y1="116" x2="484" y2="140" stroke="#b8431f" stroke-width="4"/>
+      <circle class="bad mut" cx="484" cy="128" r="11" opacity=".9"/>
+      <circle cx="484" cy="128" r="17" fill="none" stroke="#b8431f" stroke-width="1.6" class="mut"/>
+      <text class="lbl" x="452" y="200" fill="#b8431f" lang="he">מוטציה</text>
+      <text class="lbl" x="452" y="200" fill="#b8431f" lang="en">mutation</text>
+      <path class="arr travel" d="M562 150C602 168 618 190 634 206" stroke="#b8431f"/>
+      <!-- altered peptide -->
+      <g transform="translate(602,232)">
+        <circle class="ok" cx="0" cy="0" r="6"/><circle class="ok" cx="15" cy="-4" r="6"/>
+        <circle class="bad" cx="30" cy="0" r="7"/>
+        <circle class="ok" cx="45" cy="-4" r="6"/><circle class="ok" cx="60" cy="0" r="6"/>
+      </g>
+      <!-- MHC with neoantigen -->
+      <path d="M634 68 v-18 h14 l8-12 8 12h14 v18" fill="none" stroke="#b8431f" stroke-width="2.2" stroke-linejoin="round"/>
+      <g transform="translate(642,40)">
+        <circle class="ok" cx="0" cy="0" r="5"/><circle class="bad" cx="12" cy="-3" r="6"/>
+        <circle class="ok" cx="24" cy="0" r="5"/><circle class="ok" cx="36" cy="-3" r="5"/>
+      </g>
+      <text class="lbl" x="598" y="100" fill="#b8431f">NEOANTIGEN</text>
+      <!-- T cell recognising -->
+      <g transform="translate(682,-6)">
+        <circle cx="0" cy="36" r="30" fill="#b8431f" opacity=".2" class="lock"/>
+        <circle class="tcell" cx="0" cy="36" r="24" stroke="#b8431f"/>
+        <path d="M-10 14l-5-9M0 12v-10M10 14l5-9" stroke="#b8431f" stroke-width="2.2" fill="none"/>
+        <text class="lbl" x="-14" y="41" fill="#b8431f" style="font-size:11px">T</text>
+      </g>
+      <text class="lbl2" x="400" y="296" fill="#b8431f" lang="he">משהו זר — התא מסומן להריסה</text>
+      <text class="lbl2" x="400" y="296" fill="#b8431f" lang="en">Something foreign — the cell is marked</text>
+    </svg>
+    </div>
+    <figcaption>
+      <span lang="he"><b>שמאל:</b> תא רגיל מציג על פני השטח רק קטעי חלבון שמערכת החיסון מכירה, ותא T עובר לידו בלי לעצור. <b>ימין:</b> מוטציה בדנ״א משנה חומצת אמינו אחת בחלבון. אותו מתלה MHC מציג עכשיו קטע שלא קיים בשום תא אחר בגוף — וזה מה שתא T יכול לזהות. כל התוכנית הזאת היא מאמץ למצוא את הקטעים האלה אצל אלפא ולהגיד למערכת החיסון שלה לאן להסתכל.</span>
+      <span lang="en"><b>Left:</b> an ordinary cell presents only protein fragments the immune system knows, and a T cell passes without stopping. <b>Right:</b> a mutation in the DNA changes a single amino acid in a protein. The same MHC cradle now presents a fragment that exists in no other cell in the body — and that is what a T cell can recognise. This whole project is an effort to find those fragments in Alpha and tell her immune system where to look.</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============ HOW: finding mutations ============ -->
+<section id="how">
+  <div class="col">
+    <p class="eyebrow"><span lang="he">שלב א׳</span><span lang="en">Step one</span></p>
+    <h2 lang="he">איך בכלל מוצאים את המוטציות</h2>
+    <h2 lang="en">How the mutations are found at all</h2>
+    <p lang="he">מרצפים שתי דגימות, לא אחת: את הגידול, ואת הדם. הדם הוא העותק ה"בריא" — הגנום שאלפא נולדה איתו. כל שינוי שמופיע בגידול אבל לא בדם הוא מוטציה שנצברה בגידול עצמו. זה נקרא <strong>מוטציה סומטית</strong>, וזה המטען שעליו עובדים.</p>
+    <p lang="en">Two samples are sequenced, not one: the tumour, and blood. The blood is the "healthy" copy — the genome Alpha was born with. Any change present in the tumour but absent from the blood is a mutation that accumulated in the tumour itself. That is a <strong>somatic mutation</strong>, and it is the material to work with.</p>
+    <p lang="he">ההשוואה הזאת היא גם מה שמונע את הטעות הגדולה. בגנום של כל כלב יש מיליוני הבדלים מהגנום הייחוס. בלי דגימת הדם, כל אחד מההבדלים האלה היה נראה כמו מוטציה של הגידול, והחיסון היה מכוון לחלבונים שקיימים בכל תא בגוף של אלפא. זה הדבר הגרוע ביותר שיכול לקרות כאן.</p>
+    <p lang="en">That comparison is also what prevents the big mistake. Every dog's genome differs from the reference genome in millions of places. Without the blood sample, each of those differences would look like a tumour mutation, and the vaccine would target proteins present in every cell in Alpha's body. That is the worst thing that could happen here.</p>
+  </div>
+
+  <figure>
+    <p class="figtitle" lang="he">איור 2 — חיסור הגידול פחות הבריא</p>
+    <p class="figtitle" lang="en">Figure 2 — tumour minus normal</p>
+    <div class="figscroll">
+<svg viewBox="0 0 760 320" role="img" aria-labelledby="f2t f2d">
+      <title id="f2t"><tspan lang="he">השוואת קריאות בין הגידול והדם</tspan></title>
+      <desc id="f2d">A reference sequence with two stacks of sequencing reads beneath it. The normal stack matches the reference at every column; the tumour stack carries a different base at one column, which is marked as the somatic mutation.</desc>
+      <defs>
+        <style>
+          .ref{fill:#0f1b2a}
+          .refbox{fill:#eceff3;stroke:#d3dbe4;stroke-width:1}
+          .read{fill:#dceaf1;stroke:#8dbccf;stroke-width:1}
+          .readT{fill:#f6e2d9;stroke:#dba791;stroke-width:1}
+          .base{font:500 11px "IBM Plex Mono",monospace;fill:#4a5b70;text-anchor:middle}
+          .baseM{font:700 11px "IBM Plex Mono",monospace;fill:#b8431f;text-anchor:middle}
+          .tag{font:500 11px "IBM Plex Mono",monospace;fill:#4a5b70}
+          .tagT{font:700 13px "Assistant",sans-serif;fill:#0f1b2a}
+          .hl{fill:#b8431f;opacity:.1}
+          .scan{animation:glow 3.6s ease-in-out infinite}
+        </style>
+      </defs>
+      <!-- highlight column -->
+      <rect class="hl scan" x="406" y="18" width="26" height="248" rx="4"/>
+
+      <!-- reference -->
+      <text class="tag" x="18" y="30">REFERENCE</text>
+      <g>
+        <rect class="refbox" x="120" y="36" width="546" height="24" rx="4"/>
+        <g class="base" y="53">
+          <text x="133" y="53">G</text><text x="159" y="53">A</text><text x="185" y="53">T</text><text x="211" y="53">C</text>
+          <text x="237" y="53">A</text><text x="263" y="53">G</text><text x="289" y="53">G</text><text x="315" y="53">T</text>
+          <text x="341" y="53">C</text><text x="367" y="53">A</text><text x="393" y="53">T</text>
+          <text x="419" y="53">C</text>
+          <text x="445" y="53">A</text><text x="471" y="53">G</text><text x="497" y="53">T</text><text x="523" y="53">C</text>
+          <text x="549" y="53">A</text><text x="575" y="53">A</text><text x="601" y="53">G</text><text x="627" y="53">T</text><text x="653" y="53">C</text>
+        </g>
+      </g>
+
+      <!-- normal reads -->
+      <text class="tag" x="18" y="92">BLOOD</text>
+      <text class="tag" x="18" y="106" lang="he">(הבריא)</text>
+      <text class="tag" x="18" y="106" lang="en">(normal)</text>
+      <g>
+        <rect class="read" x="146" y="78" width="286" height="15" rx="3"/>
+        <rect class="read" x="198" y="97" width="312" height="15" rx="3"/>
+        <rect class="read" x="120" y="116" width="299" height="15" rx="3"/>
+        <rect class="read" x="302" y="135" width="286" height="15" rx="3"/>
+        <text class="base" x="419" y="90">C</text>
+        <text class="base" x="419" y="109">C</text>
+        <text class="base" x="419" y="147">C</text>
+      </g>
+
+      <!-- tumour reads -->
+      <text class="tag" x="18" y="196" fill="#b8431f">TUMOUR</text>
+      <g>
+        <rect class="readT" x="159" y="170" width="299" height="15" rx="3"/>
+        <rect class="readT" x="250" y="189" width="312" height="15" rx="3"/>
+        <rect class="readT" x="133" y="208" width="299" height="15" rx="3"/>
+        <rect class="readT" x="315" y="227" width="286" height="15" rx="3"/>
+        <rect class="readT" x="211" y="246" width="299" height="15" rx="3"/>
+        <text class="baseM" x="419" y="182">T</text>
+        <text class="baseM" x="419" y="201">T</text>
+        <text class="baseM" x="419" y="220">T</text>
+        <text class="baseM" x="419" y="239">T</text>
+        <text class="baseM" x="419" y="258">T</text>
+      </g>
+
+      <!-- callout -->
+      <path d="M419 272 v16 h150" fill="none" stroke="#b8431f" stroke-width="1.6"/>
+      <circle cx="419" cy="272" r="3.4" fill="#b8431f"/>
+      <text class="tagT" x="578" y="293" fill="#b8431f" lang="he">מוטציה סומטית: C←T</text>
+      <text class="tagT" x="578" y="293" fill="#b8431f" lang="en">somatic mutation: C→T</text>
+    </svg>
+    </div>
+    <figcaption>
+      <span lang="he">כל מלבן הוא קריאה אחת מהמרצף — קטע דנ״א של כ-150 בסיסים, שהמחשב מיישר למקומו על הגנום. בעמודה אחת כל הקריאות מהגידול אומרות <span class="sci">T</span> ואלה מהדם אומרות <span class="sci">C</span>. ההבדל הזה, ורק הוא, הוא מועמד. בפועל הפייפליין בודק כך מיליארדי עמודות, ועל אלפא נדרשות כ-100 קריאות בכל נקודה בגידול וכ-40 בדם כדי שהבדיקה תהיה אמינה.</span>
+      <span lang="en">Each rectangle is one read from the sequencer — a DNA fragment of about 150 bases that software aligns to its place on the genome. At one column every tumour read says <span class="sci">T</span> while the blood reads say <span class="sci">C</span>. That difference, and only that, is a candidate. In practice the pipeline examines billions of columns this way, and for Alpha about 100 reads at each point in the tumour and about 40 in the blood are needed for the test to be reliable.</span>
+    </figcaption>
+  </figure>
+
+  <div class="col">
+    <p class="eyebrow"><span lang="he">שלב ב׳</span><span lang="en">Step two</span></p>
+    <h2 lang="he">מוטציה היא לא עדיין מטרה</h2>
+    <h2 lang="en">A mutation is not yet a target</h2>
+    <p lang="he">נניח שמצאנו מוטציה שמשנה חומצת אמינו. זה עוד לא אומר שמערכת החיסון תוכל לראות אותה. הקטע החדש צריך לעבור שלושה מסננים: הוא צריך להיות באמת מיוצר בתא (כלומר הגן פעיל), הוא צריך להיחתך לקטע באורך מתאים, והוא צריך <strong>להיכנס פיזית</strong> למתלה ה-DLA של אלפא.</p>
+    <p lang="en">Suppose a mutation that changes an amino acid has been found. That does not yet mean the immune system can see it. The new fragment must pass three filters: it has to actually be made in the cell (the gene must be active), it has to be cut to a fragment of a suitable length, and it has to <strong>physically fit</strong> into Alpha's DLA cradle.</p>
+    <p lang="he">המסנן השלישי הוא הצוואר הצר, והוא גם המקום שבו כלבים שונים מאוד מבני אדם. לכל אדם וכל כלב יש גרסאות שונות של גני ה-MHC, וכל גרסה היא תלולית בצורה אחרת — קטע שנכנס מצוין לאחת לא ייכנס בכלל לאחרת. אצל בני אדם יש מודלים מחושבים טובים מאוד לחיזוי הזה, שאומנו על מיליוני מדידות. אצל כלבים המודלים חלשים בהרבה, ואת האללים המדויקים של אלפא עוד לא יודעים — הם ייקבעו מתוך נתוני הריצוף שלה.</p>
+    <p lang="en">The third filter is the bottleneck, and it is also where dogs differ sharply from humans. Every person and every dog carries different versions of the MHC genes, and each version is a differently shaped groove — a fragment that fits one beautifully may not fit another at all. In humans there are very good computational models for this prediction, trained on millions of measurements. In dogs the models are far weaker, and Alpha's exact alleles are not yet known — they will be determined from her own sequencing data.</p>
+  </div>
+
+  <figure>
+    <p class="figtitle" lang="he">איור 3 — אותו פפטיד, שני אללים</p>
+    <p class="figtitle" lang="en">Figure 3 — one peptide, two alleles</p>
+    <div class="figscroll">
+<svg viewBox="0 0 760 290" role="img" aria-labelledby="f3t f3d">
+      <title id="f3t"><tspan lang="he">התאמת פפטיד לתלולית ההצגה</tspan></title>
+      <desc id="f3d">The same nine-residue peptide tested against two different DLA grooves: it seats fully into the first, and is blocked by the second because one pocket is the wrong shape.</desc>
+      <defs>
+        <style>
+          .groove{fill:#ffffff;stroke:#0f1b2a;stroke-width:2.2}
+          .pocket{fill:#eceff3}
+          .res{fill:#0b6a8f}
+          .resbad{fill:#b8431f}
+          .gl{font:500 11px "IBM Plex Mono",monospace;fill:#4a5b70}
+          .gt{font:700 13px "Assistant",sans-serif;fill:#0f1b2a}
+          .seat{animation:nudge 4s ease-in-out infinite;--ny:6px}
+          .block{animation:nudge 4s ease-in-out infinite;--ny:-5px}
+          .halo{animation:glow 4s ease-in-out infinite}
+        </style>
+      </defs>
+
+      <!-- panel A : fits -->
+      <text class="gl" x="40" y="28">DLA allele A</text>
+      <g class="halo"><rect x="30" y="150" width="300" height="58" rx="10" fill="#0b6a8f" opacity=".16"/></g>
+      <!-- groove with pockets -->
+      <path class="groove" d="M30 158h300v30a18 18 0 0 1-18 18H48a18 18 0 0 1-18-18z"/>
+      <g class="pocket">
+        <rect x="56" y="158" width="26" height="20" rx="6"/>
+        <rect x="128" y="158" width="26" height="20" rx="6"/>
+        <rect x="206" y="158" width="26" height="20" rx="6"/>
+        <rect x="280" y="158" width="26" height="20" rx="6"/>
+      </g>
+      <!-- peptide seated -->
+      <g transform="translate(0,-6)"><g class="seat">
+        <path d="M60 150h244" stroke="#0b6a8f" stroke-width="3" stroke-linecap="round"/>
+        <circle class="res" cx="60" cy="150" r="9"/><circle class="res" cx="90" cy="150" r="9"/>
+        <circle class="res" cx="120" cy="150" r="9"/><circle class="res" cx="150" cy="150" r="9"/>
+        <circle class="resbad" cx="180" cy="150" r="10"/>
+        <circle class="res" cx="210" cy="150" r="9"/><circle class="res" cx="240" cy="150" r="9"/>
+        <circle class="res" cx="270" cy="150" r="9"/><circle class="res" cx="300" cy="150" r="9"/>
+      </g></g>
+      <text class="gt" x="30" y="248" lang="he">נכנס — מוצג על פני התא</text>
+      <text class="gt" x="30" y="248" lang="en">Fits — presented on the cell</text>
+      <text class="gl" x="30" y="268" lang="he">תא T יכול לזהות</text>
+      <text class="gl" x="30" y="268" lang="en">a T cell can recognise it</text>
+
+      <!-- panel B : blocked -->
+      <text class="gl" x="430" y="28">DLA allele B</text>
+      <path class="groove" d="M420 158h300v30a18 18 0 0 1-18 18H438a18 18 0 0 1-18-18z"/>
+      <g class="pocket">
+        <rect x="446" y="158" width="26" height="20" rx="6"/>
+        <rect x="518" y="158" width="26" height="20" rx="6"/>
+        <rect x="670" y="158" width="26" height="20" rx="6"/>
+      </g>
+      <!-- blocking bump where a pocket should be -->
+      <path d="M584 158h30v-14a15 15 0 0 0-30 0z" fill="#b8431f" opacity=".82"/>
+      <!-- peptide repelled -->
+      <g transform="translate(0,-16)"><g class="block">
+        <path d="M450 150h244" stroke="#7c8a9c" stroke-width="3" stroke-linecap="round"/>
+        <circle class="res" cx="450" cy="150" r="9" opacity=".5"/><circle class="res" cx="480" cy="150" r="9" opacity=".5"/>
+        <circle class="res" cx="510" cy="150" r="9" opacity=".5"/><circle class="res" cx="540" cy="150" r="9" opacity=".5"/>
+        <circle class="resbad" cx="570" cy="150" r="10"/>
+        <circle class="res" cx="600" cy="150" r="9" opacity=".5"/><circle class="res" cx="630" cy="150" r="9" opacity=".5"/>
+        <circle class="res" cx="660" cy="150" r="9" opacity=".5"/><circle class="res" cx="690" cy="150" r="9" opacity=".5"/>
+      </g></g>
+      <path d="M592 112l18 18M610 112l-18 18" stroke="#b8431f" stroke-width="2.6" stroke-linecap="round"/>
+      <text class="gt" x="420" y="248" lang="he">לא נכנס — אף פעם לא יוצג</text>
+      <text class="gt" x="420" y="248" lang="en">Does not fit — never presented</text>
+      <text class="gl" x="420" y="268" lang="he">מועמד מבוזבז</text>
+      <text class="gl" x="420" y="268" lang="en">a wasted candidate</text>
+    </svg>
+    </div>
+    <figcaption>
+      <span lang="he">תשעת העיגולים הם פפטיד — קטע חלבון באורך תשע חומצות אמינו, כשהאדום הוא זה שהמוטציה שינתה. לתלולית יש כיסים בעומק ובצורה מסוימים, והפפטיד נתפס בהם כמו מפתח. אותו פפטיד בדיוק נכנס לאלל אחד ונחסם באחר. לכן אי אפשר לבנות חיסון בלי לדעת את האללים של <em>הכלבה הזאת</em>, ולכן חיסון שנבנה לאלפא לא יעבוד על כלב אחר.</span>
+      <span lang="en">The nine circles are a peptide — a protein fragment nine amino acids long, the red one being the residue the mutation changed. The groove has pockets of a particular depth and shape, and the peptide is held in them like a key. The very same peptide seats into one allele and is blocked by another. This is why a vaccine cannot be built without knowing <em>this dog's</em> alleles, and why a vaccine built for Alpha will not work for another dog.</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============ PIPELINE (dark band) ============ -->
+<section id="pipeline" class="band">
+  <div class="col">
+    <p class="eyebrow"><span lang="he">שלב ג׳</span><span lang="en">Step three</span></p>
+    <h2 lang="he">מגנום שלם לשתי מולקולות</h2>
+    <h2 lang="en">From a whole genome to two molecules</h2>
+    <p lang="he">זה החלק שהוא תוכנה. שני הגנומים נכנסים בקצה אחד, ומהקצה השני יוצאת רשימה מדורגת של פפטידים מועמדים. בין שני הקצוות יש שבעה שלבים, וכל שלב זורק את רוב מה שנכנס אליו. המספרים באיור הבא הם אמיתיים, אבל הם מהרצת הניסיון — על כלב ציבורי אחר, לא על אלפא. אצלה המספרים יהיו אחרים; הסדר גודל של ההיפוך הוא הנקודה.</p>
+    <p lang="en">This is the part that is software. Two genomes go in at one end, and a ranked list of candidate peptides comes out of the other. Between the two ends are seven stages, and each stage discards most of what reaches it. The numbers in the next figure are real, but they come from the trial run — on a different, public dog, not on Alpha. Hers will differ; the order of magnitude of the narrowing is the point.</p>
+  </div>
+
+  <figure>
+    <p class="figtitle" lang="he">איור 4 — הפייפליין, עם המספרים מהרצת הניסיון</p>
+    <p class="figtitle" lang="en">Figure 4 — the pipeline, with real trial-run numbers</p>
+    <div class="figscroll">
+<svg viewBox="0 0 760 430" role="img" aria-labelledby="f4t f4d">
+      <title id="f4t"><tspan lang="he">שלבי הפייפליין וההיפוך בכל שלב</tspan></title>
+      <desc id="f4d">A funnel of seven pipeline stages from raw reads to two candidate peptides, each bar labelled with the count that survived it in the trial run.</desc>
+      <defs>
+        <style>
+          .fbar{fill:#1d4f68}
+          .fbar2{fill:#0b6a8f}
+          .fbar3{fill:#b8431f}
+          .fl{font:500 11px "IBM Plex Mono",monospace;fill:#8ea3b8}
+          .fn{font:500 15px "IBM Plex Mono",monospace;fill:#dde7f0}
+          .fs{font:700 13px "Assistant",sans-serif;fill:#dde7f0}
+          .fx{font:400 11.5px "Assistant",sans-serif;fill:#8ea3b8}
+          .wire{stroke:#2a4257;stroke-width:1.6;fill:none}
+          .spark{stroke:#6fc4e4;stroke-width:2.4;fill:none;stroke-dasharray:14 320;animation:dashmove 2.6s linear infinite}
+        </style>
+      </defs>
+      <!-- stage rows -->
+      <!-- 1 -->
+      <text class="fl" x="18" y="34">01</text>
+      <text class="fs" x="52" y="34"><tspan lang="he">קריאות גולמיות</tspan><tspan lang="en">Raw reads</tspan></text>
+      <rect class="fbar" x="300" y="20" width="440" height="22" rx="4"/>
+      <text class="fn" x="310" y="36">1,168,100,000</text>
+      <text class="fx" x="52" y="50"><tspan lang="he">זוגות קריאות משתי הדגימות</tspan><tspan lang="en">read pairs, both samples</tspan></text>
+
+      <path class="wire" d="M520 44v18"/><path class="spark" d="M520 44v18"/>
+      <!-- 2 -->
+      <text class="fl" x="18" y="80">02</text>
+      <text class="fs" x="52" y="80"><tspan lang="he">יישור ל-4 גנומי ייחוס</tspan><tspan lang="en">Aligned to 4 references</tspan></text>
+      <rect class="fbar" x="300" y="66" width="440" height="22" rx="4"/>
+      <text class="fn" x="310" y="82">bwa-mem · GATK</text>
+      <text class="fx" x="52" y="96"><tspan lang="he">סימון כפילויות וכיול בסיסים</tspan><tspan lang="en">duplicate marking, base recalibration</tspan></text>
+
+      <path class="wire" d="M520 90v18"/><path class="spark" d="M520 90v18"/>
+      <!-- 3 -->
+      <text class="fl" x="18" y="126">03</text>
+      <text class="fs" x="52" y="126"><tspan lang="he">קריאת מוטציות (Mutect2)</tspan><tspan lang="en">Variant calling (Mutect2)</tspan></text>
+      <rect class="fbar" x="300" y="112" width="396" height="22" rx="4"/>
+      <text class="fn" x="310" y="128">171,003</text>
+      <text class="fx" x="52" y="142"><tspan lang="he">רשומות גולמיות בגנום הראשי</tspan><tspan lang="en">raw records, primary reference</tspan></text>
+
+      <path class="wire" d="M498 136v18"/><path class="spark" d="M498 136v18"/>
+      <!-- 4 -->
+      <text class="fl" x="18" y="172">04</text>
+      <text class="fs" x="52" y="172"><tspan lang="he">סינון: מה סומטי באמת</tspan><tspan lang="en">Filtering: truly somatic</tspan></text>
+      <rect class="fbar2" x="300" y="158" width="152" height="22" rx="4"/>
+      <text class="fn" x="310" y="174">6,209</text>
+      <text class="fx" x="52" y="188"><tspan lang="he">‏115,674 נפסלו כארטיפקט, ‏6,771 כגרמינליים</tspan><tspan lang="en">115,674 rejected as artefact, 6,771 as germline</tspan></text>
+
+      <path class="wire" d="M376 182v18"/><path class="spark" d="M376 182v18"/>
+      <!-- 5 -->
+      <text class="fl" x="18" y="218">05</text>
+      <text class="fs" x="52" y="218"><tspan lang="he">אנוטציה (VEP): מה זה משנה</tspan><tspan lang="en">Annotation (VEP): what it changes</tspan></text>
+      <rect class="fbar2" x="300" y="204" width="138" height="22" rx="4"/>
+      <text class="fn" x="310" y="220">5,609</text>
+      <text class="fx" x="52" y="234"><tspan lang="he">מופו לגן, לתעתיק ולחלבון</tspan><tspan lang="en">mapped to gene, transcript and protein</tspan></text>
+
+      <path class="wire" d="M369 228v18"/><path class="spark" d="M369 228v18"/>
+      <!-- 6 -->
+      <text class="fl" x="18" y="264">06</text>
+      <text class="fs" x="52" y="264"><tspan lang="he">משנות חלבון</tspan><tspan lang="en">Protein-changing</tspan></text>
+      <rect class="fbar2" x="300" y="250" width="56" height="22" rx="4"/>
+      <text class="fn" x="366" y="266" fill="#8ea3b8">42</text>
+      <text class="fx" x="52" y="280"><tspan lang="he">וריאנטים שנכנסים לחיזוי ההצגה</tspan><tspan lang="en">variants entering presentation prediction</tspan></text>
+
+      <path class="wire" d="M328 274v18"/><path class="spark" d="M328 274v18"/>
+      <!-- 7 -->
+      <text class="fl" x="18" y="310">07</text>
+      <text class="fs" x="52" y="310"><tspan lang="he">חיזוי קשירה ל-DLA (pVACseq)</tspan><tspan lang="en">DLA binding prediction (pVACseq)</tspan></text>
+      <rect class="fbar2" x="300" y="296" width="190" height="22" rx="4" opacity=".55"/>
+      <text class="fn" x="310" y="312">7,452</text>
+      <text class="fx" x="52" y="326"><tspan lang="he">שורות אפיטופ — כל מוטציה נחתכת לחלונות של 8–11</tspan><tspan lang="en">epitope rows — each mutation cut into 8–11-mers</tspan></text>
+
+      <path class="wire" d="M395 320v18"/><path class="spark" d="M395 320v18"/>
+      <!-- 8 result -->
+      <text class="fl" x="18" y="358">08</text>
+      <text class="fs" x="52" y="358" fill="#f0a98d"><tspan lang="he">מועמדים אחרי סינון</tspan><tspan lang="en">Candidates after filtering</tspan></text>
+      <rect class="fbar3" x="300" y="344" width="30" height="22" rx="4"/>
+      <text class="fn" x="340" y="360" fill="#f0a98d">2</text>
+      <text class="fx" x="52" y="374"><tspan lang="he">שניהם frameshift, שניהם על אותו אלל</tspan><tspan lang="en">both frameshifts, both on the same allele</tspan></text>
+
+      <!-- footer note inside svg -->
+      <line x1="18" y1="392" x2="742" y2="392" stroke="#223548" stroke-width="1"/>
+      <text class="fx" x="18" y="414" fill="#7d93a9"><tspan lang="he">המספרים מהרצת הניסיון על כלב ציבורי (אוסטאוסרקומה בפה), גנום ייחוס ראשי UU_Cfam_GSD_1.0, כיסוי מלא.</tspan><tspan lang="en">Numbers from the trial run on a public dog (oral osteosarcoma), primary reference UU_Cfam_GSD_1.0, full coverage.</tspan></text>
+    </svg>
+    </div>
+    <figcaption>
+      <span lang="he">שימו לב למה שקורה בשלב 4: מתוך 171 אלף רשומות גולמיות, פחות מ-4% שורדות. רוב מה שנפסל הוא רעש של שיטת הריצוף, לא ביולוגיה. שלב 7 מנפח שוב את המספר כי כל מוטציה אחת נחתכת לעשרות חלונות באורכים שונים, וכל חלון נבדק בנפרד. בסוף התהליך נשארו שני מועמדים — <b>שניים</b>. זו שכבה דקה מאוד, וזו אחת המגבלות האמיתיות של הגישה.</span>
+      <span lang="en">Note what happens at stage 4: of 171,000 raw records, fewer than 4% survive. Most of what is rejected is sequencing-method noise, not biology. Stage 7 inflates the number again because each single mutation is cut into dozens of windows of different lengths, each scored separately. At the end of the process two candidates remained — <b>two</b>. That is a very thin layer, and it is one of the approach's real limitations.</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============ FROM LIST TO VACCINE ============ -->
+<section id="vaccine">
+  <div class="col">
+    <p class="eyebrow"><span lang="he">שלב ד׳</span><span lang="en">Step four</span></p>
+    <h2 lang="he">איך רשימת פפטידים הופכת לזריקה</h2>
+    <h2 lang="en">How a list of peptides becomes an injection</h2>
+    <p lang="he">כאן נכנס ה-mRNA, ומכאן גם הקשר לחיסוני הקורונה — אותה טכנולוגיה בדיוק, מטרה אחרת לגמרי. במקום לייצר את הפפטידים במעבדה ולהזריק אותם, מזריקים את <em>ההוראות</em> לייצור שלהם, והגוף מייצר אותם בעצמו.</p>
+    <p lang="en">This is where mRNA comes in, and it is also the link to the COVID vaccines — exactly the same technology, an entirely different target. Instead of manufacturing the peptides in a laboratory and injecting them, the <em>instructions</em> for making them are injected, and the body makes them itself.</p>
+    <p lang="he">בונים גן מלאכותי: רצף שמקודד את הפפטידים הנבחרים בשורה, עם מחברים ביניהם, עם פפטיד איתות שמכוון אותם למסלול ההצגה, ועם אזורי בקרה שמייצבים את ה-mRNA בתוך התא. הרצף הזה נארז בתוך חלקיק שומני זעיר — LNP — שתפקידו היחיד להעביר אותו דרך קרום התא בשלום. אחרי ההזרקה, תאים באזור בולעים את החלקיק, הריבוזומים שלהם קוראים את ה-mRNA כמו כל mRNA אחר, מייצרים את הפפטידים, ומציגים אותם על פני השטח. ה-mRNA עצמו מתפרק תוך יום-יומיים ולא נכנס לגנום.</p>
+    <p lang="en">An artificial gene is built: a sequence encoding the selected peptides in a row, with linkers between them, a signal peptide that directs them into the presentation pathway, and control regions that stabilise the mRNA inside the cell. That sequence is packaged in a tiny lipid particle — an LNP — whose only job is to carry it safely across the cell membrane. After injection, cells in the area take up the particle, their ribosomes read the mRNA like any other mRNA, make the peptides and display them on the surface. The mRNA itself breaks down within a day or two and does not enter the genome.</p>
+  </div>
+
+  <figure>
+    <p class="figtitle" lang="he">איור 5 — מההזרקה לתגובה</p>
+    <p class="figtitle" lang="en">Figure 5 — from injection to response</p>
+    <div class="figscroll">
+<svg viewBox="0 0 760 320" role="img" aria-labelledby="f5t f5d">
+      <title id="f5t"><tspan lang="he">מסלול חיסון ה-mRNA בתוך התא</tspan></title>
+      <desc id="f5d">A lipid nanoparticle delivers mRNA into a cell; a ribosome travels along the strand building a peptide chain, the peptide is loaded onto MHC at the surface, and T cells are recruited.</desc>
+      <defs>
+        <style>
+          .mem{fill:#ffffff;stroke:#0f1b2a;stroke-width:2.2}
+          .lnpc{fill:#f6e2d9;stroke:#b8431f;stroke-width:2}
+          .lip{fill:#b8431f}
+          .mrna{fill:none;stroke:#0b6a8f;stroke-width:3.4;stroke-linecap:round}
+          .ribo{fill:#0f1b2a}
+          .ribo2{fill:#4a5b70}
+          .pep{fill:#0b6a8f}
+          .pepm{fill:#b8431f}
+          .el{font:500 11px "IBM Plex Mono",monospace;fill:#4a5b70}
+          .et{font:700 12.5px "Assistant",sans-serif;fill:#0f1b2a}
+          .arrw{fill:none;stroke:#7c8a9c;stroke-width:1.8;stroke-dasharray:5 4;animation:dashmove 1.8s linear infinite}
+          .runner{animation:sweepx 5s ease-in-out infinite alternate;--sx:150px}
+          .chain{stroke-dasharray:120;animation:grow 5s ease-in-out infinite alternate;--dl:120}
+          .tc{fill:#f3f6f8;stroke:#b8431f;stroke-width:1.8}
+          .tcpulse{animation:glow 3.2s ease-in-out infinite}
+        </style>
+      </defs>
+
+      <!-- 1 LNP -->
+      <text class="el" x="18" y="30">01 · LNP</text>
+      <circle class="lnpc" cx="62" cy="130" r="36"/>
+      <g class="lip"><circle cx="48" cy="114" r="3.2"/><circle cx="76" cy="116" r="3.2"/><circle cx="44" cy="146" r="3.2"/><circle cx="78" cy="144" r="3.2"/><circle cx="62" cy="104" r="3.2"/><circle cx="62" cy="156" r="3.2"/></g>
+      <path class="mrna" d="M46 130c6-8 12 8 18 0s12-8 16 0" stroke-width="2.6"/>
+      <text class="et" x="18" y="190" lang="he">חלקיק שומני</text>
+      <text class="et" x="18" y="190" lang="en">lipid particle</text>
+      <text class="el" x="18" y="208" lang="he">נושא את ה-mRNA</text>
+      <text class="el" x="18" y="208" lang="en">carries the mRNA</text>
+
+      <path class="arrw" d="M106 130h52"/>
+
+      <!-- 2 the cell -->
+      <text class="el" x="176" y="30">02 · <tspan lang="he">בתוך התא</tspan><tspan lang="en">inside the cell</tspan></text>
+      <path class="mem" d="M176 44h386a18 18 0 0 1 18 18v170a18 18 0 0 1-18 18H176a18 18 0 0 1-18-18V62a18 18 0 0 1 18-18z"/>
+      <!-- mrna strand -->
+      <path class="mrna" d="M196 178c40-26 80 26 120 0s80 26 120 0 70 14 102 0"/>
+      <text class="el" x="196" y="204">mRNA</text>
+      <!-- ribosome travelling -->
+      <g transform="translate(206,0)"><g class="runner">
+        <circle class="ribo" cx="0" cy="170" r="15"/>
+        <circle class="ribo2" cx="0" cy="152" r="11"/>
+      </g></g>
+      <text class="el" x="196" y="128" lang="he">ריבוזום קורא</text>
+      <text class="el" x="196" y="128" lang="en">ribosome reads</text>
+      <!-- growing peptide chain -->
+      <g transform="translate(400,118)">
+        <path class="mrna chain" d="M0 0h118" stroke-width="3"/>
+        <circle class="pep" cx="0" cy="0" r="7"/><circle class="pep" cx="24" cy="0" r="7"/>
+        <circle class="pepm" cx="48" cy="0" r="8"/>
+        <circle class="pep" cx="72" cy="0" r="7"/><circle class="pep" cx="96" cy="0" r="7"/>
+        <circle class="pep" cx="118" cy="0" r="7"/>
+      </g>
+      <text class="et" x="400" y="98" lang="he">הפפטידים נבנים</text>
+      <text class="et" x="400" y="98" lang="en">the peptides are built</text>
+      <!-- MHC at membrane -->
+      <path d="M470 44v-18h14l8-12 8 12h14v18" fill="none" stroke="#0f1b2a" stroke-width="2.2" stroke-linejoin="round"/>
+      <g transform="translate(478,16)">
+        <circle class="pep" cx="0" cy="0" r="5"/><circle class="pepm" cx="12" cy="-3" r="6"/>
+        <circle class="pep" cx="24" cy="0" r="5"/><circle class="pep" cx="36" cy="-3" r="5"/>
+      </g>
+      <text class="el" x="440" y="70">MHC / DLA</text>
+
+      <!-- 3 T cells -->
+      <text class="el" x="610" y="30">03 · <tspan lang="he">תגובה</tspan><tspan lang="en">response</tspan></text>
+      <g>
+        <circle cx="668" cy="98" r="30" fill="#b8431f" opacity=".16" class="tcpulse"/>
+        <circle class="tc" cx="668" cy="98" r="22"/>
+        <path d="M656 80l-5-9M668 78v-9M680 80l5-9" stroke="#b8431f" stroke-width="2" fill="none"/>
+        <circle class="tc" cx="628" cy="162" r="18"/>
+        <circle class="tc" cx="696" cy="172" r="18"/>
+        <circle class="tc" cx="660" cy="218" r="18"/>
+      </g>
+      <path class="arrw" d="M598 110h30"/>
+      <text class="et" x="604" y="262" lang="he">תאי T מתרבים</text>
+      <text class="et" x="604" y="262" lang="en">T cells multiply</text>
+      <text class="el" x="604" y="280" lang="he">ומחפשים את התא</text>
+      <text class="el" x="604" y="280" lang="en">and hunt the cell</text>
+
+      <text class="el" x="176" y="300" fill="#7c8a9c" lang="he">ה-mRNA מתפרק תוך יום־יומיים ואינו נכנס לגנום.</text>
+      <text class="el" x="176" y="300" fill="#7c8a9c" lang="en">The mRNA degrades within a day or two and does not enter the genome.</text>
+    </svg>
+    </div>
+    <figcaption>
+      <span lang="he">אותו מכניזם בדיוק שעמד מאחורי חיסוני ה-mRNA לקורונה — רק שבמקום רצף של חלבון ויראלי, הרצף שמוזרק מקודד את הפפטידים שהגידול של אלפא מייצר ואף תא אחר לא. העיגול האדום בשרשרת הוא חומצת האמינו שהמוטציה שינתה; הוא הסיבה שכל השרשרת הזאת נראית זרה.</span>
+      <span lang="en">Exactly the mechanism behind the COVID mRNA vaccines — except that instead of a viral protein sequence, the injected sequence encodes the peptides that Alpha's tumour makes and no other cell does. The red circle in the chain is the amino acid the mutation changed; it is the reason the whole chain looks foreign.</span>
+    </figcaption>
+  </figure>
+
+  <div class="col">
+    <h3 lang="he">מסלול שני, שלא תלוי בחיזוי</h3>
+    <h3 lang="en">A second route that does not depend on prediction</h3>
+    <p lang="he">כל מה שתואר עד כאן תלוי בחיזוי: לנחש נכון אילו פפטידים ייקשרו ל-DLA של אלפא. אם החיזוי לא מדויק — וההודאה הכי כנה כאן היא שבכלבים הוא לא מדויק — החיסון מכוון לכתובת הלא נכונה.</p>
+    <p lang="en">Everything described so far depends on prediction: guessing correctly which peptides will bind Alpha's DLA. If the prediction is inaccurate — and the most honest admission here is that in dogs it is not accurate — the vaccine is aimed at the wrong address.</p>
+    <p lang="he">לכן יש גיבוי. במקום לבחור פפטידים, אפשר לקחת את <strong>כל ה-RNA של הגידול</strong> ולארוז אותו כמו שהוא. הגיוון הזה אומר שגם אם 99% מהמטרות חסרות טעם, המטרה הנכונה כנראה נמצאת שם. זה פורסם בניסוי בכלבים עם גליומה — עשרה כלבים, כולם קיבלו חיסון מיוצר בהצלחה מה-RNA של הגידול שלהם, עם הארכת הישרדות. הצד השני: אין בחירה, אין שליטה, ויש סיכון תיאורטי לתגובה נגד חלבונים תקינים. ה-RNA של הגידול של אלפא שמור, ובכמות שמספיקה — זה המסלול שנשאר פתוח אם החיזוי לא יניב כלום.</p>
+    <p lang="en">So there is a fallback. Instead of selecting peptides, one can take <strong>all of the tumour's RNA</strong> and package it as it is. That breadth means that even if 99% of the targets are pointless, the right target is probably in there. This was published in a canine glioma trial — ten dogs, a vaccine successfully manufactured from each one's own tumour RNA, with extended survival. The other side: no selection, no control, and a theoretical risk of a response against normal proteins. Alpha's tumour RNA is stored, in sufficient quantity — that is the route that stays open if prediction yields nothing.</p>
+
+    <div class="grid two">
+      <div class="cell">
+        <h4 lang="he">מסלול א׳ — ניאו-אנטיגנים נבחרים</h4>
+        <h4 lang="en">Route A — selected neoantigens</h4>
+        <p lang="he">מדויק, מוסבר, אפשר לבדוק כל מועמד בנפרד. תלוי לגמרי באיכות החיזוי ובידיעת האללים. בהרצת הניסיון: שני מועמדים.</p>
+        <p lang="en">Precise, explainable, every candidate can be tested separately. Entirely dependent on prediction quality and on knowing the alleles. In the trial run: two candidates.</p>
+      </div>
+      <div class="cell">
+        <h4 lang="he">מסלול ב׳ — RNA שלם מהגידול</h4>
+        <h4 lang="en">Route B — whole tumour RNA</h4>
+        <p lang="he">לא תלוי בחיזוי בכלל, ויש לו תקדים מפורסם בכלבים. חסר שליטה על מה בדיוק מוצג, ואין סף RNA מפורסם שאומר מה "מספיק".</p>
+        <p lang="en">Independent of prediction, and it has a published canine precedent. No control over what exactly is presented, and no published RNA threshold saying what counts as "enough".</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHAT WAS TESTED ============ -->
+<section id="tested">
+  <div class="col">
+    <p class="eyebrow"><span lang="he">מה כבר נעשה</span><span lang="en">What has been done</span></p>
+    <h2 lang="he">הרצת ניסיון, על כלב אחר</h2>
+    <h2 lang="en">A trial run, on a different dog</h2>
+    <p lang="he">לפני שמריצים משהו על הנתונים של אלפא — שהם חד-פעמיים, כי אין עוד רקמה — הרצתי את כל הפייפליין מקצה לקצה על זוג דגימות ציבורי: כלב עם אוסטאוסרקומה בפה, גידול ודם, מתוך מאגר ציבורי. אותו קוד, אותם ייחוסים, אותם סינונים. המטרה לא הייתה לגלות משהו על הכלב הזה, אלא לגלות מה שבור אצלי.</p>
+    <p lang="en">Before running anything on Alpha's data — which is one-off, because there is no more tissue — I ran the whole pipeline end to end on a public pair of samples: a dog with oral osteosarcoma, tumour and blood, from a public archive. The same code, the same references, the same filters. The aim was not to discover anything about that dog, but to discover what is broken in my own setup.</p>
+
+    <div class="grid three">
+      <div class="cell">
+        <span class="big">71<span style="font-size:.5em"> h</span></span>
+        <h4 lang="he">זמן ריצה בכיסוי מלא</h4>
+        <h4 lang="en">Wall time at full coverage</h4>
+        <p lang="he">הגנום הראשי 26.9 שעות, שלושת הסורקים 44.1 שעות ברצף.</p>
+        <p lang="en">Primary reference 26.9 h; the three scanners 44.1 h in sequence.</p>
+      </div>
+      <div class="cell">
+        <span class="big">3,109</span>
+        <h4 lang="he">שעות-ליבה</h4>
+        <h4 lang="en">vCPU-hours</h4>
+        <p lang="he">על מכונות Spot בענן, באזור תל אביב.</p>
+        <p lang="en">On cloud Spot machines, Tel Aviv region.</p>
+      </div>
+      <div class="cell">
+        <span class="big">$145</span>
+        <h4 lang="he">עלות כל הרצת הניסיון</h4>
+        <h4 lang="en">Cost of the entire trial run</h4>
+        <p lang="he">מתוכם כ-$72 חישוב ודיסקים והיתר בעיקר תעבורת רשת.</p>
+        <p lang="en">About $72 of it compute and disks, most of the rest network egress.</p>
+      </div>
+      <div class="cell">
+        <span class="big">41</span>
+        <h4 lang="he">כשלים שתועדו</h4>
+        <h4 lang="en">Documented failures</h4>
+        <p lang="he">כולם נפתרו או עוקפו. שניים הצריכו החלפת ספק ענן שלמה.</p>
+        <p lang="en">All resolved or worked around. Two forced a complete change of cloud provider.</p>
+      </div>
+      <div class="cell">
+        <span class="big sig">2,210</span>
+        <h4 lang="he">אתרי בדיקת זהות</h4>
+        <h4 lang="en">Identity-check sites</h4>
+        <p lang="he">אפס הומוזיגוטים הפוכים — הגידול והדם הם באמת מאותו פרט.</p>
+        <p lang="en">Zero opposite homozygotes — tumour and blood really are the same individual.</p>
+      </div>
+      <div class="cell">
+        <span class="big sig">4</span>
+        <h4 lang="he">גנומי ייחוס במקביל</h4>
+        <h4 lang="en">Reference genomes in parallel</h4>
+        <p lang="he">אחד מכריע, שלושה סורקים שמחפשים מה הראשי פספס.</p>
+        <p lang="en">One decides; three scanners look for what the primary missed.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:2.4rem" lang="he">למה ארבעה גנומי ייחוס, ולא אחד</h3>
+    <h3 style="margin-top:2.4rem" lang="en">Why four reference genomes, not one</h3>
+    <p lang="he">כדי להחליט שקריאה מהמרצף שייכת למקום מסוים בגנום, צריך גנום ייחוס להשוות אליו. לכלבים יש כמה, והם לא זהים — אזור שמיוצג גרוע באחד יכול לאבד כיסוי ושם לא תימצא מוטציה. פתרתי את זה בכך שלא בחרתי: גנום אחד הוא <strong>הראשי</strong> והוא היחיד שמכריע מה נכנס לרשימה, ושלושה אחרים רצים כ<strong>סורקים</strong> שמסמנים מה הראשי אולי פספס. ההשוואה ביניהם נעשית על מפתח הפפטיד עצמו, שלא תלוי בקואורדינטות, ולכן אין צורך בתרגום בין הגנומים.</p>
+    <p lang="en">To decide that a read from the sequencer belongs at a particular place in the genome, you need a reference genome to compare it against. Dogs have several, and they are not identical — a region poorly represented in one can lose coverage, and a mutation there will not be found. I resolved this by not choosing: one genome is the <strong>primary</strong> and is the only one that decides what enters the list, and three others run as <strong>scanners</strong> that flag what the primary may have missed. The comparison between them is made on the peptide key itself, which is coordinate-independent, so no translation between genomes is required.</p>
+
+    <div class="tscroll">
+      <table>
+        <caption>
+          <span lang="he">ארבעת המועמדים שעלו בהרצת הניסיון, ואיזה גנום מצא כל אחד. אפס מועמדים נמצאו בכל ארבעת הגנומים — וזו בדיוק הסיבה להריץ יותר מאחד.</span>
+          <span lang="en">The four candidates the trial run produced, and which genome found each. Zero candidates were found in all four genomes — which is precisely the reason to run more than one.</span>
+        </caption>
+        <thead>
+          <tr>
+            <th><span lang="he">פפטיד מועמד</span><span lang="en">Candidate peptide</span></th>
+            <th>GSD <span lang="he">(ראשי)</span><span lang="en">(primary)</span></th>
+            <th>CanFam3.1</th>
+            <th>ROS</th>
+            <th>Boxer</th>
+            <th><span lang="he">מצב</span><span lang="en">Status</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="n">LSFPPPPPR</td><td class="y">✓</td><td class="x">—</td><td class="y">✓</td><td class="y">✓</td><td><span lang="he">מועמד</span><span lang="en">candidate</span></td></tr>
+          <tr><td class="n">RSPGPSPAHL</td><td class="y">✓</td><td class="y">✓</td><td class="x">—</td><td class="y">✓</td><td><span lang="he">מועמד</span><span lang="en">candidate</span></td></tr>
+          <tr><td class="n">ILRERMELL</td><td class="x">—</td><td class="y">✓</td><td class="x">—</td><td class="x">—</td><td><span lang="he">לבדיקה</span><span lang="en">review</span></td></tr>
+          <tr><td class="n">RSPGPSPTHL</td><td class="x">—</td><td class="x">—</td><td class="y">✓</td><td class="x">—</td><td><span lang="he">לבדיקה</span><span lang="en">review</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4 style="margin-top:2.2rem" lang="he">הסכמה בין הגנומים ברמת האפיטופים</h4>
+    <h4 style="margin-top:2.2rem" lang="en">Agreement between genomes at the epitope level</h4>
+    <div class="bars">
+      <div class="bar pri">
+        <span lang="he">מתוך 3,655 אפיטופים — בכל ארבעה</span><span lang="en">of 3,655 epitopes — in all four</span>
+        <span class="track"><span class="fill" style="width:31.5%"></span></span>
+        <span class="val">31.5%</span>
+      </div>
+      <div class="bar">
+        <span lang="he">ראשי מול CanFam3.1</span><span lang="en">primary vs CanFam3.1</span>
+        <span class="track"><span class="fill" style="width:55.6%"></span></span>
+        <span class="val">55.6%</span>
+      </div>
+      <div class="bar">
+        <span lang="he">ראשי מול ROS_Cfam_1.0</span><span lang="en">primary vs ROS_Cfam_1.0</span>
+        <span class="track"><span class="fill" style="width:54.0%"></span></span>
+        <span class="val">54.0%</span>
+      </div>
+      <div class="bar">
+        <span lang="he">ראשי מול Dog10K_Boxer</span><span lang="en">primary vs Dog10K_Boxer</span>
+        <span class="track"><span class="fill" style="width:50.6%"></span></span>
+        <span class="val">50.6%</span>
+      </div>
+    </div>
+    <p style="margin-top:1.2rem;font-size:.93rem;color:var(--ink-soft)" lang="he">הגדרתי מראש ש-95% הסכמה תסגור את שאלת הגנום ושמתחת ל-60% יש ממצא. כל שלוש המדידות יצאו מתחת ל-60%. זה אומר שבחירת הגנום משנה את התוצאה יותר ממה שקיוויתי, ושהרצת הסורקים היא לא ליטוש אלא הכרח.</p>
+    <p style="margin-top:1.2rem;font-size:.93rem;color:var(--ink-soft)" lang="en">I set in advance that 95% agreement would close the reference question and that below 60% constitutes a finding. All three measurements came in below 60%. That means the choice of genome affects the result more than I had hoped, and that running the scanners is not polish but a necessity.</p>
+  </div>
+</section>
+
+<!-- ============ LIMITS ============ -->
+<section id="limits" class="band">
+  <div class="col">
+    <p class="eyebrow"><span lang="he">גילוי נאות</span><span lang="en">Full disclosure</span></p>
+    <h2 lang="he">מה לא עובד, ומה לא ידוע</h2>
+    <h2 lang="en">What does not work, and what is unknown</h2>
+    <p lang="he">זה החלק שבדרך כלל לא מופיע בדפים כאלה. הוא מופיע כאן כי בלעדיו כל השאר הוא פרסומת, ובעיקר כי אם מישהו מקצועי קורא את זה, אלה הדברים שאני צריך עליהם עזרה.</p>
+    <p lang="en">This is the part that usually does not appear on pages like this. It appears here because without it the rest is advertising, and chiefly because if a professional is reading this, these are the things I need help with.</p>
+
+    <div class="grid two">
+      <div class="cell">
+        <h4 lang="he">אין ל-DLA של אלפא טיפוס ידוע</h4>
+        <h4 lang="en">Alpha's DLA type is unknown</h4>
+        <p lang="he">כל הריצות עד כה השתמשו בשני אללים כ<em>ממלאי מקום</em>. הפייפליין גם לא מכיל עדיין שלב שקובע טיפוס DLA מהנתונים. בלי זה, חיזוי הקשירה חסר משמעות — ולא ניתן לסגור את זה לפני שהנתונים שלה מגיעים.</p>
+        <p lang="en">Every run so far used two alleles as <em>placeholders</em>. The pipeline also does not yet contain a step that determines DLA type from the data. Without that, binding prediction is meaningless — and it cannot be closed before her data arrives.</p>
+      </div>
+      <div class="cell">
+        <h4 lang="he">מודל החיזוי לא מכויל על כלבים</h4>
+        <h4 lang="en">The predictor is not calibrated on dogs</h4>
+        <p lang="he">המודל שבשימוש אומן בעיקר על נתונים אנושיים. הדיוק שלו על אללי DLA לא אומת. יש מאמר מ-2026 עם רשימות פפטידים כלביים אמיתיים, והוא יורד אצלי בריפו כסט אימות — אבל הבדיקה עצמה עוד לא רצה.</p>
+        <p lang="en">The model in use was trained largely on human data. Its accuracy on DLA alleles is unvalidated. A 2026 paper provides lists of real canine ligands, and it sits in my repository as a validation set — but the check itself has not been run.</p>
+      </div>
+      <div class="cell">
+        <h4 lang="he">המודל הטוב יותר לא זמין לי</h4>
+        <h4 lang="en">The better model is unavailable to me</h4>
+        <p lang="he">הכלי שמקובל כמדויק יותר לחיזוי קשירה מוגש ברישיון אקדמי שאינו מכסה אדם פרטי. אני לא משתמש בו. זו מגבלה רישויית, לא טכנית.</p>
+        <p lang="en">The tool generally considered more accurate for binding prediction is distributed under an academic licence that does not cover a private individual. I do not use it. That is a licensing limit, not a technical one.</p>
+      </div>
+      <div class="cell">
+        <h4 lang="he">וריאנט תקין בסמוך מקלקל את הפפטיד</h4>
+        <h4 lang="en">A nearby normal variant corrupts the peptide</h4>
+        <p lang="he">הכלי בונה את הפפטיד מהגנום הייחוס ומהמוטציה בלבד. בהרצת הניסיון התגלה מקרה שבו וריאנט גרמינלי במרחק 74 בסיסים שינה חומצת אמינו בפפטיד — כלומר הפפטיד שחוזה אינו הפפטיד שמיוצר. אצל אלפא, עם 47% הטרוזיגוטיות, זה צפוי לחזור.</p>
+        <p lang="en">The tool builds the peptide from the reference genome and the mutation alone. The trial run surfaced a case where a germline variant 74 bases away changed an amino acid in the peptide — meaning the predicted peptide is not the peptide that gets made. In Alpha, at 47% heterozygosity, this is expected to recur.</p>
+      </div>
+      <div class="cell">
+        <h4 lang="he">אין "תשובה נכונה" למדוד מולה</h4>
+        <h4 lang="en">There is no truth set to measure against</h4>
+        <p lang="he">בבני אדם יש מערכי אמת שמאפשרים לדעת כמה מוטציות הפייפליין מפספס. בכלבים אין. גם תוכנית בקרת איכות חיצונית לפייפליינים כלביים לא מצאתי. הרגישות והדיוק של המערכת הזאת אינם מודדים.</p>
+        <p lang="en">In humans there are truth sets that let you know how many mutations a pipeline misses. In dogs there are none. Nor could I find any external quality-assessment scheme for canine pipelines. The sensitivity and precision of this system are unmeasured.</p>
+      </div>
+      <div class="cell">
+        <h4 lang="he">שכבת המועמדים דקה מאוד</h4>
+        <h4 lang="en">The candidate layer is very thin</h4>
+        <p lang="he">בהרצת הניסיון יצאו שני מועמדים בכל גנום, ואפס מועמדים הופיעו בכל הארבעה. כל מסקנה כאן נשענת על כלב אחד ציבורי ועל שני מועמדים. זה מעט מדי כדי לקבוע משהו כללי.</p>
+        <p lang="en">The trial run produced two candidates per genome, and zero candidates appeared in all four. Every conclusion here rests on one public dog and two candidates. That is too little to establish anything general.</p>
+      </div>
+      <div class="cell">
+        <h4 lang="he">מסנן הביטוי לא נבדק</h4>
+        <h4 lang="en">The expression filter is untested</h4>
+        <p lang="he">לנתוני הניסיון הציבוריים לא היה RNA, ולכן השלב שמוודא שהגן אכן פעיל בגידול מעולם לא רץ. ה-RNA של אלפא שמור, אבל איכותו בינונית.</p>
+        <p lang="en">The public trial data had no RNA, so the stage that confirms the gene is actually active in the tumour has never run. Alpha's RNA is stored, but its quality is middling.</p>
+      </div>
+      <div class="cell">
+        <h4 lang="he">ייצור, אישור ומתן — לא התחילו</h4>
+        <h4 lang="en">Manufacture, approval and administration — not started</h4>
+        <p lang="he">זיהיתי מועמדים לייצור ה-mRNA-LNP ולא פניתי לאף אחד. המסלול הרגולטורי שנבחר הוא מוסדי-אקדמי, והטיוטות לפניות קיימות אבל לא נשלחו. זה החלק שתלוי באנשים, לא בקוד.</p>
+        <p lang="en">I have identified candidates for mRNA-LNP manufacture and approached none of them. The regulatory route chosen is institutional-academic, and drafts of the approaches exist but have not been sent. This is the part that depends on people, not on code.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <p lang="he"><strong>ומה שהכי חשוב להגיד:</strong> לא ידוע אם זה יעבוד. התקדים שהפרויקט הזה מבוסס עליו הוא מקרה אחד של כלבה אחת באוסטרליה, ובמקרה ההוא הגידול הראשי הצטמק משמעותית אבל חזר אחר כך. בכלבים אין לחיסון כזה הוכחת יעילות. אין גם דרך אמיתית לבדוק יעילות ובטיחות בלי להזריק. אני מודע לזה, ושום החלטה טיפולית לגבי אלפא לא מתקבלת כאן — היא מתקבלת עם הווטרינרים והאונקולוגית שמטפלים בה.</p>
+      <p lang="en"><strong>And the most important thing to say:</strong> it is not known whether this will work. The precedent this project is based on is a single case of one dog in Australia, and in that case the primary tumour shrank substantially but later returned. In dogs, a vaccine like this has no proof of efficacy. Nor is there any real way to test efficacy and safety without injecting. I am aware of that, and no treatment decision about Alpha is made here — it is made with the veterinarians and the oncologist caring for her.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROFESSIONAL RECORD ============ -->
+<section id="record">
+  <div class="col">
+    <p class="eyebrow"><span lang="he">לאנשי מקצוע</span><span lang="en">For professionals</span></p>
+    <h2 lang="he">מפרט, גרסאות ומקורות</h2>
+    <h2 lang="en">Specification, versions and sources</h2>
+    <p lang="he">מכאן והלאה השפה מקצועית. הכול מתועד, מגורסן ומנוהל ב-Git עם רשומה נפרדת להחלטות ולסטיות; הפרטים המלאים, כולל סכומי ביקורת לכל קובץ ייחוס ואת רשומות כל ריצה, נמצאים ברשומת הפרויקט.</p>
+    <p lang="en">From here the language is technical. Everything is documented, versioned and managed in Git with a separate record of decisions and deviations; the full detail, including checksums for every reference file and machine-copied records of every run, lives in the project record.</p>
+  </div>
+
+  <div class="col">
+    <h3 lang="he">עיצוב הניתוח</h3>
+    <h3 lang="en">Analysis design</h3>
+    <div class="tscroll wide">
+      <table>
+        <thead><tr>
+          <th>#</th>
+          <th><span lang="he">שלב</span><span lang="en">Stage</span></th>
+          <th><span lang="he">כלי וגרסה</span><span lang="en">Tool and version</span></th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="n">0</td>
+            <td><span lang="he">אימות ייחוסים — הצעד הראשון בכל ריצה; כשל עוצר לפני כל חישוב</span><span lang="en">Reference validation — first step of every run; a failure stops it before any compute</span></td>
+            <td class="n">in-house validator<br><span style="color:var(--ink-faint)">names + lengths vs dict, fai, germline, GTF, VEP cache</span></td></tr>
+          <tr><td class="n">1</td>
+            <td><span lang="he">QC, יישור, סימון כפילויות, BQSR, קריאת מוטציות סומטיות</span><span lang="en">QC, alignment, duplicate marking, BQSR, somatic calling</span></td>
+            <td class="n">nf-core/sarek 3.10.0 · Nextflow 25.10.7<br>bwa-mem 0.7.19-r1273 · GATK 4.6.2.0<br>samtools/htslib 1.24</td></tr>
+          <tr><td class="n">2</td>
+            <td><span lang="he">סינון. ראשי: בתוך sarek עם זיהום וסגמנטציה. סורקים: אחר כך, עם טבלת הזיהום של הראשי</span><span lang="en">Filtering. Primary: inside sarek with contamination and segmentation. Scanners: afterwards, with the primary's contamination table</span></td>
+            <td class="n">GATK FilterMutectCalls 4.6.2.0<br><span style="color:var(--ink-faint)">germline prior 2.516e-4 = 1/(2×1,987)</span></td></tr>
+          <tr><td class="n">3</td>
+            <td><span lang="he">אנוטציה, תסריט אחד לכל הגנומים; הראשי מקבל גישור שמות</span><span lang="en">Annotation, one script for all genomes; the primary gets a name-synonyms bridge</span></td>
+            <td class="n">Ensembl VEP 116<br>Frameshift + Wildtype plugins</td></tr>
+          <tr><td class="n">4</td>
+            <td><span lang="he">חיזוי ניאו-אנטיגנים, class I, חלונות 8–11, PASS בלבד</span><span lang="en">Neoantigen prediction, class I, 8–11-mers, PASS only</span></td>
+            <td class="n">pVACtools 7.1.4 · MHCflurry 2.0.6<br><span style="color:var(--ink-faint)">species dog</span></td></tr>
+          <tr><td class="n">5</td>
+            <td><span lang="he">השוואה חוצת-גנומים על מפתח הפפטיד, בלי liftover; שתי רמות, עם סיבה לכל פספוס</span><span lang="en">Cross-genome comparison on the peptide key, no liftover; two tiers, with a reason for every miss</span></td>
+            <td class="n">in-house<br><span style="color:var(--ink-faint)">key = PEPTIDE_SEQ:MUT_POS</span></td></tr>
+          <tr><td class="n">6</td>
+            <td><span lang="he">בדיקת זהות דגימה, כשל = עצירה: גידול↔דם, ודם↔פאנל הגנוטיפים של הבעלים</span><span lang="en">Sample identity check, failure = stop: tumour↔blood, and blood↔the owner's genotyping panel</span></td>
+            <td class="n">in-house<br><span style="color:var(--ink-faint)">opposite-homozygote rate, FAIL &gt; 0.01</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col">
+    <h3 lang="he">גנומי ייחוס</h3>
+    <h3 lang="en">Reference genomes</h3>
+    <div class="tscroll wide">
+      <table>
+        <caption>
+          <span lang="he">הראשי נבחר משתי סיבות בלתי תלויות: הוא היחיד שיש לו משאב תדירויות אללים אוכלוסייתי בשמות שלו עצמו, מה שנדרש לסינון הגרמינלי של Mutect2; ולפי Dog10K, כלבים מטיפוס רועה גרמני חולקים את שיעור האללים הגבוה ביותר עם קלאדים רבים, ולכן זה הייחוס הבודד הטוב ביותר לכלב מעורב. הגזע של אלפא עצמה <em>לא</em> שימש כנימוק.</span>
+          <span lang="en">The primary was chosen for two independent reasons: it is the only candidate with a population allele-frequency resource in its own naming, which Mutect2's germline filtering requires; and per Dog10K, German-Shepherd-type dogs share the highest allele fraction with many clades, making it the best single reference for a mixed dog. Alpha's own breed was <em>not</em> used as an argument.</span>
+        </caption>
+        <thead><tr>
+          <th><span lang="he">תפקיד</span><span lang="en">Role</span></th>
+          <th><span lang="he">גנום</span><span lang="en">Assembly</span></th>
+          <th><span lang="he">מספר גישה</span><span lang="en">Accession</span></th>
+          <th><span lang="he">גרמינלי / ידועים</span><span lang="en">Germline / known sites</span></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><strong lang="he">ראשי</strong><strong lang="en">Primary</strong><br><span style="font-size:.85em;color:var(--ink-faint)"><span lang="he">מכריע לבד מה נכנס לרשימה</span><span lang="en">alone decides the list</span></span></td>
+            <td class="n">UU_Cfam_GSD_1.0</td><td class="n">GCA_011100685.1</td>
+            <td class="n">Dog10K — 1,987 <span lang="he">כלבים</span><span lang="en">dogs</span>,<br>48,981,051 <span lang="he">אתרים עם AF</span><span lang="en">sites with AF</span></td>
+          </tr>
+          <tr><td><span lang="he">סורק</span><span lang="en">Scanner</span></td><td class="n">CanFam3.1</td><td class="n">GCA_000002285.2</td><td class="n">Ensembl 104 <span lang="he">(ל-BQSR, בלי AF)</span><span lang="en">(BQSR only, no AF)</span></td></tr>
+          <tr><td><span lang="he">סורק</span><span lang="en">Scanner</span></td><td class="n">ROS_Cfam_1.0</td><td class="n">GCA_014441545.1</td><td class="n">Ensembl 116 <span lang="he">(בלי AF)</span><span lang="en">(no AF)</span></td></tr>
+          <tr><td><span lang="he">סורק</span><span lang="en">Scanner</span></td><td class="n">Dog10K_Boxer_Tasha</td><td class="n">GCA_000002285.4</td><td class="n">Ensembl 116 <span lang="he">(בלי AF)</span><span lang="en">(no AF)</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="col">
+    <h3 lang="he">דגימות וריצוף</h3>
+    <h3 lang="en">Samples and sequencing</h3>
+    <dl class="spec">
+      <dt lang="he">גידול — DNA</dt><dt lang="en">Tumour — DNA</dt>
+      <dd>~6.2 µg</dd>
+      <dt lang="he">דם (EDTA) — DNA</dt><dt lang="en">Blood (EDTA) — DNA</dt>
+      <dd>~3.4 µg</dd>
+      <dt lang="he">גידול — RNA</dt><dt lang="en">Tumour — RNA</dt>
+      <dd>~37.8 µg · RIN 3.8 · DV200 70.9%</dd>
+      <dt lang="he">ריצוף שהוזמן</dt><dt lang="en">Sequencing ordered</dt>
+      <dd>tumour WGS ~100× · normal WGS ~40× · tumour RNA-seq, two libraries<br>MGI DNBSEQ-G400, PE 150, not PCR-free</dd>
+      <dt lang="he">גנוטיפים ידועים</dt><dt lang="en">Known genotypes</dt>
+      <dd>carrier: SOD1 c.118G&gt;A, RBM20 22-bp deletion · MDR1 clear<br><span lang="he">משמשים כעוגן לבדיקת זהות הדגימה</span><span lang="en">used as anchors for the sample-identity check</span></dd>
+      <dt lang="he">אין</dt><dt lang="en">Not available</dt>
+      <dd lang="he">תאים חיים משומרים · דגימת PBMC בסיסית · רקמה קפואה מעבר לשארית במעבדה</dd>
+      <dd lang="en">viably cryopreserved cells · a baseline PBMC sample · frozen tissue beyond the lab's residue</dd>
+    </dl>
+
+    <h3 style="margin-top:2.6rem" lang="he">חישוב</h3>
+    <h3 style="margin-top:2.6rem" lang="en">Compute</h3>
+    <dl class="spec">
+      <dt lang="he">פלטפורמה</dt><dt lang="en">Platform</dt>
+      <dd>Google Cloud Batch, me-west1 (Tel Aviv)<br><span lang="he">מכונות Spot ‏N2 / C2D, בלי IP חיצוני, יציאה דרך NAT</span><span lang="en">Spot N2 / C2D, no external IP, egress via NAT</span></dd>
+      <dt lang="he">ארכיטקטורה</dt><dt lang="en">Architecture</dt>
+      <dd lang="he">ה-head של Nextflow הוא עבודת Batch; כל משימה היא עבודה נפרדת. תקרת משאבים לכל משימה — חובה בכל ריצה.</dd>
+      <dd lang="en">The Nextflow head is a Batch job; every task is a job of its own. A per-task resource cap is mandatory in every run.</dd>
+      <dt lang="he">נתוני הניסיון</dt><dt lang="en">Trial data</dt>
+      <dd>BioProject PRJNA1154710 · <span lang="he">נורמלי</span><span lang="en">normal</span> SRR30499116 (449.8 M <span lang="he">זוגות</span><span lang="en">pairs</span>, ~57×) · <span lang="he">גידול</span><span lang="en">tumour</span> SRR30499115 (718.3 M, ~90×)</dd>
+      <dt lang="he">בקרת שינויים</dt><dt lang="en">Change control</dt>
+      <dd lang="he">ענפי feature ו-PR, ‏CI ‏(lint, tests, shellcheck), ‏commits מוסכמים, גרסאות קוד מוקפאות לכל ריצה</dd>
+      <dd lang="en">feature branches and PRs, CI (lint, tests, shellcheck), conventional commits, a frozen code version per run</dd>
+    </dl>
+
+    <div class="note">
+      <p lang="he"><strong>היסטוריה שכדאי להכיר אם משחזרים את זה:</strong> החישוב התחיל ב-AWS, החשבון נסגר באמצע; עבר ל-Oracle Cloud, והמכסות שם צנחו לאפס תוך יממה; ומאז הוא ב-Google Cloud. שתי ההחלפות האלה מתועדות כסטיות, לא כהערות שוליים — הן עלו שבועות.</p>
+      <p lang="en"><strong>History worth knowing if you reproduce this:</strong> the compute began on AWS and that account was closed mid-way; it moved to Oracle Cloud, where quotas fell to zero within a day; and it has been on Google Cloud since. Both moves are recorded as deviations rather than footnotes — they cost weeks.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COLLABORATE ============ -->
+<section id="help">
+  <div class="col">
+    <p class="eyebrow"><span lang="he">איפה שותף יכול לעזור</span><span lang="en">Where a partner could help</span></p>
+    <h2 lang="he">מה אני מחפש</h2>
+    <h2 lang="en">What I am looking for</h2>
+    <p lang="he">הפרויקט הזה נבנה בידי אדם אחד, והחלקים שחסרים לו הם בדיוק החלקים שדורשים מעבדה, מוסד או רישיון. אם משהו מהרשימה הזאת נמצא בתחום שלך, אשמח לשמוע.</p>
+    <p lang="en">This project was built by one person, and the parts it is missing are exactly the parts that require a laboratory, an institution or a licence. If anything on this list is in your field, I would like to hear from you.</p>
+    <ol class="ul">
+      <li lang="he"><strong>ניטור חיסוני.</strong> ‏ELISpot של IFN-γ על PBMC כלבי — דגימת בסיס לפני כל סטרואיד או כימותרפיה, ואחר כך לאחר חיסון; וכן מבחני ייצוב פפטיד-DLA או טטרמרים.</li>
+      <li lang="en"><strong>Immune monitoring.</strong> Canine IFN-γ ELISpot on PBMC — a baseline before any steroid or chemotherapy, then after vaccination; plus peptide–DLA stabilisation assays or tetramers.</li>
+      <li lang="he"><strong>הצגת אנטיגנים.</strong> אימונופפטידומיקה על שארית הרקמה הקפואה, כדי להשוות את הפפטידים החזויים לפפטידים שמוצגים בפועל. זו הדרך הישירה לבדוק אם החיזוי בכלל קולע.</li>
+      <li lang="en"><strong>Antigen presentation.</strong> Immunopeptidomics on the residual frozen tumour, to compare predicted peptides against those actually presented. This is the direct way to test whether the prediction lands at all.</li>
+      <li lang="he"><strong>טיפוס DLA וכיול המנבא.</strong> טיפוס מתוך WGS או RNA-seq, ובדיקת המנבא מול ליגנדים כלביים מפורסמים.</li>
+      <li lang="en"><strong>DLA typing and predictor calibration.</strong> Typing from WGS or RNA-seq, and checking the predictor against published canine ligands.</li>
+      <li lang="he"><strong>פיקוח קליני ואתיקה.</strong> צוות אונקולוגיה וטרינרית וועדת מחקר מוסדית, לפרוטוקול מותנה.</li>
+      <li lang="en"><strong>Clinical oversight and ethics.</strong> A veterinary oncology team and an institutional research committee, for a conditional protocol.</li>
+      <li lang="he"><strong>ייצור.</strong> ‏mRNA-LNP בדרגת מחקר, או הכנת RNA-LPA מה-RNA השלם.</li>
+      <li lang="en"><strong>Manufacture.</strong> Research-grade mRNA-LNP, or an RNA-LPA preparation from the whole RNA.</li>
+    </ol>
+
+    <div class="note cool" id="contact">
+      <p lang="he"><strong>יצירת קשר.</strong> ניתן לפנות אליי דרך הכתובת שמופיעה בכתובת האתר הזה. אם אתם ממוסד אקדמי, ממעבדה או ממרפאה וטרינרית — אני שמח לשלוח את רשומת הפרויקט המלאה, כולל סיכום המקרה באנגלית, התיעוד של כל ריצה וכל ההחלטות והסטיות.</p>
+      <p lang="en"><strong>Getting in touch.</strong> I can be reached through the address shown at this site's domain. If you are from an academic institution, a laboratory or a veterinary clinic, I am glad to send the full project record, including the English case summary, the documentation of every run, and all decisions and deviations.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SOURCES ============ -->
+<section id="sources">
+  <div class="col">
+    <p class="eyebrow"><span lang="he">מקורות</span><span lang="en">Sources</span></p>
+    <h2 lang="he">על מה זה נשען</h2>
+    <h2 lang="en">What this rests on</h2>
+    <ol class="ul">
+      <li>
+        <span lang="he"><strong>התקדים.</strong> המקרה המפורסם של "רוזי" באוסטרליה (2025–26): ריצוף גידול ודם, בחירת ניאו-אנטיגנים בעזרת כלים מחושבים, וחיסון mRNA-LNP מותאם אישית שניתן בפיקוח אקדמי יחד עם מעכב נקודת בקרה. הגידול הראשי הצטמק משמעותית, וחזר לאחר ניתוח מאוחר.</span>
+        <span lang="en"><strong>The precedent.</strong> The published case of "Rosie" in Australia (2025–26): tumour and blood sequencing, computational neoantigen selection, and a personalised mRNA-LNP vaccine given under academic oversight alongside a checkpoint inhibitor. The primary tumour shrank substantially, and recurred after later surgery.</span>
+      </li>
+      <li>
+        <span lang="he"><strong>המסלול השני.</strong> ניסוי בכלבים עם גליומה, שבו חיסון הורכב מכל ה-RNA של הגידול בצורת אגרגטים של חלקיקי שומן — עשרה כלבים, ייצור הצליח בכולם, עם הארכת הישרדות.</span>
+        <span lang="en"><strong>The second route.</strong> A canine glioma trial in which the vaccine was made from the tumour's whole RNA as lipid-particle aggregates — ten dogs, successful manufacture in all, with extended survival.</span>
+        <a href="https://pubmed.ncbi.nlm.nih.gov/41218853/" rel="noopener">PubMed 41218853</a>
+      </li>
+      <li>
+        <span lang="he"><strong>אימונופפטידומיקה כלבית.</strong> ‏Kaabinejadian et al., <em>iScience</em> 29(6):115975 (2026) — המאמר שמספק רשימות פפטידים כלביים אמיתיים, ממפה אללי DLA-88 לאללי HLA הומולוגיים, ומדווח שבין 30% ל-55% מהפפטידים על גידולים כלביים זהים לפפטידים אנושיים מתועדים.</span>
+        <span lang="en"><strong>Canine immunopeptidomics.</strong> Kaabinejadian et al., <em>iScience</em> 29(6):115975 (2026) — the paper providing lists of real canine ligands, mapping DLA-88 alleles to homologous HLA alleles, and reporting that between 30% and 55% of peptides on canine tumours are identical to documented human peptides.</span>
+        <a href="https://doi.org/10.1016/j.isci.2026.115975" rel="noopener">doi:10.1016/j.isci.2026.115975</a>
+      </li>
+      <li>
+        <span lang="he"><strong>משאב האוכלוסייה.</strong> קונסורציום Dog10K — קריאות גרמינליות מ-1,987 כלבים, המשאב שמאפשר ל-Mutect2 להבדיל בין וריאנט תורשתי למוטציה של הגידול.</span>
+        <span lang="en"><strong>The population resource.</strong> The Dog10K consortium — germline calls from 1,987 dogs, the resource that lets Mutect2 distinguish an inherited variant from a tumour mutation.</span>
+      </li>
+      <li>
+        <span lang="he"><strong>נתוני הניסיון.</strong> זוג גידול/נורמלי ציבורי מ-BioProject PRJNA1154710 (כלב עם אוסטאוסרקומה בפה).</span>
+        <span lang="en"><strong>The trial data.</strong> A public tumour/normal pair from BioProject PRJNA1154710 (a dog with oral osteosarcoma).</span>
+        <a href="https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1154710" rel="noopener">PRJNA1154710</a>
+      </li>
+      <li>
+        <span lang="he"><strong>הפייפליין.</strong> ‏nf-core/sarek, ‏GATK, ‏Ensembl VEP ו-pVACtools — כולם פתוחים, ומוצמדים לגרסאות מדויקות שמופיעות בטבלה למעלה.</span>
+        <span lang="en"><strong>The pipeline.</strong> nf-core/sarek, GATK, Ensembl VEP and pVACtools — all open, pinned to the exact versions listed in the table above.</span>
+      </li>
+      <li>
+        <span lang="he"><strong>פתולוגיה.</strong> דוח היסטופתולוגיה ותוספת, מעבדה וטרינרית בישראל, ספטמבר–אוקטובר 2026.</span>
+        <span lang="en"><strong>Pathology.</strong> Histopathology report and addendum, a veterinary laboratory in Israel, September–October 2026.</span>
+      </li>
+    </ol>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="frow">
+      <div>
+        <p style="color:var(--deep-ink);font-family:var(--font-display);font-size:1.15rem;font-weight:700;margin-bottom:.4em" lang="he">חיסון לאלפא</p>
+        <p style="color:var(--deep-ink);font-family:var(--font-display);font-size:1.15rem;font-weight:700;margin-bottom:.4em" lang="en">A vaccine for Alpha</p>
+        <p lang="he">פרויקט פרטי של עידן כהן. העמוד מתעד עבודה שנעשית בפועל, ומתעדכן כשהיא מתקדמת.</p>
+        <p lang="en">A private project by Idan Cohen. This page documents work actually under way, and is updated as it progresses.</p>
+      </div>
+      <div>
+        <p style="color:var(--deep-ink);font-weight:700;margin-bottom:.4em" lang="he">בעמוד הזה</p>
+        <p style="color:var(--deep-ink);font-weight:700;margin-bottom:.4em" lang="en">On this page</p>
+        <p>
+          <a href="#alpha"><span lang="he">אלפא</span><span lang="en">Alpha</span></a> ·
+          <a href="#idea"><span lang="he">הרעיון</span><span lang="en">The idea</span></a> ·
+          <a href="#how"><span lang="he">איך זה עובד</span><span lang="en">How it works</span></a> ·
+          <a href="#tested"><span lang="he">מה נבדק</span><span lang="en">What was tested</span></a> ·
+          <a href="#limits"><span lang="he">מה לא עובד</span><span lang="en">What fails</span></a> ·
+          <a href="#record"><span lang="he">מפרט</span><span lang="en">Specification</span></a> ·
+          <a href="#help"><span lang="he">שיתוף פעולה</span><span lang="en">Collaboration</span></a>
+        </p>
+      </div>
+    </div>
+    <p class="disclaimer" lang="he">העמוד הזה הוא תיעוד של פרויקט מחקרי פרטי ושל גישה שנמצאת בפיתוח. הוא איננו ייעוץ וטרינרי או רפואי, איננו הצעה לטיפול, ואיננו מתאר טיפול זמין. חיסון ניאו-אנטיגני מותאם אישית לכלבים אינו טיפול מאושר, יעילותו אינה מוכחת, וכל החלטה טיפולית לגבי חיה צריכה להתקבל עם הווטרינר המטפל בה. אם יש לכלב שלכם גידול — פנו לווטרינר, לא לעמוד אינטרנט.</p>
+    <p class="disclaimer" lang="en">This page documents a private research project and an approach still in development. It is not veterinary or medical advice, not an offer of treatment, and does not describe an available therapy. A personalised neoantigen vaccine for dogs is not an approved treatment, its efficacy is unproven, and any treatment decision about an animal should be made with the veterinarian caring for it. If your dog has a tumour, see a veterinarian, not a web page.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var buttons = document.querySelectorAll('.lang button');
+
+  function apply(lang) {
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang);
+    root.setAttribute('dir', lang === 'he' ? 'rtl' : 'ltr');
+    buttons.forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.set === lang));
+    });
+    try { localStorage.setItem('alpha-lang', lang); } catch (e) {}
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () { apply(b.dataset.set); });
+  });
+
+  var stored = null;
+  try { stored = localStorage.getItem('alpha-lang'); } catch (e) {}
+  if (stored === 'he' || stored === 'en') {
+    apply(stored);
+  } else if (!/^he\b/i.test(navigator.language || '')) {
+    // Visitors whose browser is not Hebrew start in English; the toggle stays available.
+    apply('en');
+  }
+})();
+</script>
+</body>
 </html>
