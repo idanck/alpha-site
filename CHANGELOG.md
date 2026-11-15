@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Hebrew headings are set in Heebo instead of Frank Ruhl Libre. English
+  headings are unchanged.
+
 ### Fixed
 - Narrow screens: prose ran edge to edge with no side margin; every column now
   keeps the page gutter.

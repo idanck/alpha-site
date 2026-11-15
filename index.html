@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Assistant:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@700;800&family=Assistant:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f1b2a'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23e0653d' stroke-width='2.6' fill='none' stroke-linejoin='round'/%3E%3Cpath d='M12.4 18.4h7.2' stroke='%2358b8d8' stroke-width='2.2'/%3E%3C/svg%3E">
 <style>
 /* Layout idea: one editorial column of prose, interrupted by full-bleed schematic bands;
@@ -62,6 +62,9 @@ body{
   --measure:68ch;
 }
 html[data-lang="he"]{direction:rtl}
+/* Hebrew headings are set in Heebo; English headings keep Frank Ruhl Libre. */
+html[data-lang="he"]{--font-display:"Heebo","Assistant",system-ui,sans-serif}
+html[data-lang="he"] h1{font-weight:800;letter-spacing:-.01em}
 html[data-lang="en"]{direction:ltr}
 /* Visibility toggle must beat any later display rule on the same element. */
 html[data-lang="he"] [lang="en"]{display:none!important}
@@ -101,7 +104,7 @@ strong{font-weight:700}
    tracked uppercase mono in English are set in the body face in Hebrew. */
 html[data-lang="he"] :is(.eyebrow,.figtitle,thead th){
   font-family:var(--font-body);font-weight:600;letter-spacing:.03em;font-size:.86rem}
-html[data-lang="he"] :is(.chip,.tl time){font-size:.86rem;letter-spacing:0}
+html[data-lang="he"] :is(.chip,.tl time){font-family:var(--font-body);font-size:.88rem;letter-spacing:0}
 /* Machine strings inside a right-to-left page: each line takes its direction from its
    own first letter, so a leading "~" or a closing ")" stays where it was typed. */
 html[data-lang="he"] :is(td.n,dl.spec dd){unicode-bidi:plaintext;text-align:right}

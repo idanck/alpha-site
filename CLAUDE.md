@@ -79,6 +79,8 @@ see "Deploying" below for why.
 - **Hebrew and monospace.** Plex Mono has no Hebrew. Tracked mono labels switch
   to the body face under `html[data-lang="he"]`; machine strings use
   `unicode-bidi:plaintext` so punctuation does not jump sides.
+- **Heading face by language.** Hebrew headings use Heebo, English headings
+  Frank Ruhl Libre; `html[data-lang="he"]` overrides `--font-display`.
 - **Complete at rest.** Animations loop on content that is already visible.
   Nothing waits for a scroll or a click to appear.
 - Respect `prefers-reduced-motion`.
