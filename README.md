@@ -1,33 +1,62 @@
 # alpha-site
 
-Public bilingual site explaining the personalised neoantigen vaccine project for Alpha
+The public, bilingual (Hebrew/English) page explaining the personalised
+neoantigen vaccine project for Alpha — a dog with a liver carcinoma.
 
-## דרישות
+**Live:** https://alpha.idanck.com
 
-<!-- TODO: גרסאות runtime, כלים חיצוניים -->
+## What this repository is
 
-## הרצה מקומית
+One self-contained HTML page. All CSS, all JavaScript and all five animated SVG
+figures are inline; the only external request the page makes is to Google Fonts.
+There is no framework and no client-side routing.
 
-```bash
-git clone https://github.com/idanck/alpha-site.git
-cd alpha-site
-git config core.hooksPath .githooks   # מפעיל את בדיקות ה-commit/push
+```
+index.html              the site — the source of truth
+scripts/deploy.sh       publish to the Cloudflare Worker, then verify
+scripts/build_worker.py builds and uploads the Worker
 ```
 
-<!-- TODO: פקודות ההרצה בפועל -->
+## Requirements
 
-## משתני סביבה
+- Node 22+ (only to run the CI build locally)
+- Python 3.9+ (deployment)
+- A Cloudflare API token with Workers Scripts:Edit, plus Zone:Read and
+  Workers Routes:Edit to attach the custom domain
 
-העתק את `.env.example` ל-`.env` ומלא ערכים. `.env` לא נכנס ל-git לעולם.
+## Running it
 
-## Deploy
+```bash
+npm install
+npm run dev      # local dev server
+npm run build    # what CI runs; output in dist/
+```
 
-<!-- TODO -->
+`npm run build` exists so CI proves the page still parses and builds. **It is
+not what gets deployed.** Vite minifies whitespace, which saves about 2% and
+makes the deployed bytes differ from the file in this repo. Deployment publishes
+`index.html` as it is, so the live page can be compared byte for byte against
+this repository — which `scripts/deploy.sh` does on every run.
 
-## מבנה
+## Deploying
 
-<!-- TODO: תיאור קצר של התיקיות המרכזיות -->
+```bash
+set -a; source "$CREDENTIALS_FILE"; set +a   # CLOUDFLARE_API_TOKEN, CF_ACCOUNT_ID
+scripts/deploy.sh
+```
 
----
+The script embeds `index.html` in a Cloudflare Worker named `alpha-site`,
+uploads it, attaches `alpha.idanck.com` as a custom domain, then fetches the
+live page and compares it with `index.html`.
 
-Stack: `static-vite` · הוקם ב-15/11/2026 לפי תקן `repo-bootstrap` v1.1.0
+## Environment
+
+See `.env.example` — names only. Values never enter this repository.
+
+## After a fresh clone
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Without it the pre-commit and pre-push hooks are inactive in that clone.

@@ -1,74 +1,90 @@
 # CLAUDE.md — alpha-site
 
-> נוצר על ידי הסקיל `repo-bootstrap` v1.1.0 בתאריך 15/11/2026.
-> **הקובץ הזה הוא ההגנה האמיתית של הריפו.** אין הגנת שרת על `main` (GitHub Free + ריפו פרטי),
-> ולכן הכללים כאן הם מה שמונע בלגן. עדכן אותו כשהפרויקט משתנה.
+> Created by the `repo-bootstrap` skill on 15/11/2026.
+> This repository is **public**. Everything committed here is world-readable,
+> including history. Treat every commit accordingly.
 
-## מה זה
+## What this is
 
-Public bilingual site explaining the personalised neoantigen vaccine project for Alpha
+The public bilingual page about the personalised neoantigen vaccine project for
+Alpha, served at https://alpha.idanck.com. One self-contained HTML file.
+
+The analysis pipeline itself lives in a different, private repository
+(`idanck/alpha-genomics-gcp`). **Nothing from there is copied here** except
+numbers that are already fit for publication.
 
 ## Stack
 
-`static-vite`
+`static-vite`. Vite is present so CI can prove the page still builds; the page
+needs no build step of its own. Deployment publishes `index.html` verbatim —
+see "Deploying" below for why.
 
-## פקודות
+## Commands
 
-<!-- מולא אוטומטית לפי ה-stack; עדכן כשמשתנה -->
-
-| מטרה | פקודה |
+| Goal | Command |
 |---|---|
-| הרצה מקומית | `npm run dev` |
-| build | `npm run build` |
-| תצוגה מקדימה של build | `npm run preview` |
+| install | `npm install` |
+| dev server | `npm run dev` |
+| build (what CI runs) | `npm run build` |
+| deploy | `scripts/deploy.sh` (needs `CLOUDFLARE_API_TOKEN`, `CF_ACCOUNT_ID`) |
 
-## כללי עבודה — מחייבים
+## Binding rules
 
-1. **אסור push ישיר ל-`main`.** תמיד `feature/<name>` ואז PR. יש `pre-push` hook מקומי
-   שחוסם, אבל הוא חל רק על clone שהוגדר בו `core.hooksPath` — הכלל הזה גובר עליו תמיד.
-2. **Conventional Commits בלבד:** `<type>(<scope>): <subject>` —
-   `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `revert`.
-   subject בציווי, עד ~72 תווים.
-3. **אפס סודות ואפס פרטי תשתית ב-git.** סודות = טוקנים, סיסמאות, מפתחות.
-   פרטי תשתית = כתובות IP פנימיות, פורט SSH, נתיבי בית עם שם משתמש (`/home/<user>`),
-   hostnames פנימיים (`.local`, `.lan`, `.ts.net`), שמות משתמש ופרטי קשר אישיים.
-   חל גם על הודעות commit, תיאורי PR ו-issues.
-   - שמות משתנים ב-`.env.example`; ערכים ב-`.env` המקומי (לא נכנס ל-git). המקור: סקיל `credentials-vault`.
-   - בתיעוד ובדוגמאות: `192.0.2.10`, `example.com`, `$HOME/...`, `<user>`.
-   - חריגה מכוונת ומאושרת: הערה `gitleaks:allow` בסוף השורה, עם נימוק ב-PR.
-   - `pre-commit` hook חוסם סודות מקומית; הבדיקה `secret-scan` ב-CI תופסת גם פרטי תשתית.
-     פירוט: `coding-conventions` §5.
-4. **קרא לפני שאתה כותב.** לפני שינוי בקובץ קיים — קרא אותו והתאם לסגנון הקיים.
-5. **אמת לפני שאתה מדווח.** אחרי שינוי: build / lint / הרצה. אל תכתוב "בוצע" בלי אימות.
-6. **אל תמציא.** חסר נתון (endpoint, פורט, מבנה טבלה)? בדוק בקוד, בסקיל, או שאל את עידן.
-7. **אסור למזג PR כשהבדיקה `secret-scan` אדומה.** בריפו פרטי גיטהאב לא חוסם את המיזוג — הכלל הזה כן.
-   ממצא ב-commit קודם של הענף: לשכתב את הענף (amend / rebase + force-push באישור עידן),
-   לא להוסיף commit תיקון — ה-commit הישן נשאר גלוי ב-PR.
+1. **No direct push to `main`.** Always `feature/<name>` then a PR. This repo is
+   public, so GitHub also enforces it server-side: PR required, force-push and
+   deletion blocked. The rule here still governs.
+2. **Conventional Commits only:** `<type>(<scope>): <subject>` — `feat` `fix`
+   `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `revert`.
+3. **No secrets, and no home-infrastructure details.** This is a public repo:
+   no LAN addresses, no SSH ports, no `/home/<user>` paths, no internal
+   hostnames. Reference paths through environment variables instead. The
+   `pre-commit` hook and the `secret-scan` workflow both check, and `secret-scan`
+   covers infrastructure patterns, not just token shapes.
+4. **Read before you write.** The page is one long file with a deliberate
+   structure; match the surrounding style.
+5. **Verify before you report.** After a change: `npm run build`, and render the
+   page before deploying. Never write "done" without checking.
+6. **Every number on the page must be traceable.** Figures quoted on the site
+   come from the record in `idanck/alpha-genomics-gcp` (`docs/record/`): the
+   dry-run report and the case summary. Never estimate a number onto this page,
+   and never round one into something that reads better. If the record changes,
+   change the page.
+7. **The limitations section stays.** The page states plainly what does not work
+   and what is unknown. Do not soften it, and do not drop it for length.
+8. **The medical disclaimer stays** in both languages.
 
-## אחרי clone חדש
+## Page conventions
 
-```bash
-git config core.hooksPath .githooks
-```
-בלי זה ה-hooks לא פעילים ב-clone הזה. בסשן ענן זה השלב הראשון.
+- **Bilingual.** Every piece of visible text exists twice, as sibling elements
+  marked `lang="he"` and `lang="en"`. `html[data-lang]` hides one side with
+  `display:none !important`. The `!important` is load-bearing: without it, any
+  later rule that sets `display` on the same element wins on specificity and
+  both languages render at once.
+- **SVG figures are pinned to `direction:ltr`.** Their coordinate layout is
+  left-to-right. On an RTL page, SVG text anchoring flips and every label runs
+  off the canvas. Hebrew still shapes correctly inside each label.
+- **Never put a CSS animation that uses `transform` directly on an SVG group
+  that carries a `transform` attribute.** The CSS transform replaces the
+  attribute and the group jumps to the origin. Wrap it: position on the outer
+  `<g>`, animation on an inner `<g>`.
+- **Do not reuse page-layout class names inside an SVG.** A CSS rule such as
+  `.col { width: ... }` also applies to `<rect class="col">` and overrides its
+  width attribute.
+- **Complete at rest.** Animations loop on content that is already visible.
+  Nothing waits for a scroll or a click to appear.
+- Respect `prefers-reduced-motion`.
 
-## סקילים רלוונטיים
+## Deploying
 
-| נושא | סקיל |
-|---|---|
-| מוסכמות קוד (מקור אמת) | `coding-conventions` |
-| branch / commit / PR / merge | `git-workflow` |
-| סקירת קוד, tags, releases | `code-review` |
-| סודות והרשאות | `credentials-vault` |
+`scripts/deploy.sh` embeds `index.html` in a Cloudflare Worker named
+`alpha-site`, uploads it through the Cloudflare API, attaches the custom domain,
+then fetches the live page and compares it byte for byte with `index.html`.
 
-## משתני סביבה
+Deployment uses the source file, not `dist/`. Vite's build minifies whitespace,
+saving about 2%, but that would make the live bytes differ from this repository
+and remove the ability to verify the two are identical. The 2% is not worth it.
 
-ראה `.env.example` — שמות בלבד. ערכים לעולם לא נכנסים לריפו.
+## Do not touch
 
-## Deploy
-
-<!-- TODO: איך מדפלים, לאן, ומה בדיקת העשן שמאשרת הצלחה -->
-
-## אסור לגעת
-
-<!-- TODO: נתיבים או קבצים שדורשים אישור מפורש מעידן לפני שינוי -->
+- `alpha.idanck.com` DNS: the record is managed by the Worker's custom-domain
+  binding. Editing it by hand will break the route.
