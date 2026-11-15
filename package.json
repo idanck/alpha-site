@@ -1,0 +1,15 @@
+{
+  "name": "alpha-site",
+  "version": "0.1.0",
+  "description": "Public bilingual site explaining the personalised neoantigen vaccine project for Alpha",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}

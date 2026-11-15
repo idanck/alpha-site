@@ -1,0 +1,100 @@
+# .gitleaks.toml — repo-bootstrap standard
+#
+# Used by .github/workflows/secret-scan.yml. Two families of findings:
+#   1. secrets  — gitleaks' built-in rules (tokens, keys, passwords)
+#   2. infra    — details that map the owner's network: LAN / VPN addresses,
+#                 SSH ports, home-directory paths, internal hostnames
+#
+# Documentation-safe placeholders that never trigger:
+#   IPs   192.0.2.x · 198.51.100.x · 203.0.113.x   (RFC 5737)
+#   hosts example.com · *.example                   (RFC 2606)
+#   paths $HOME/… · ~/… · /home/<user>/…
+#
+# A deliberate, reviewed exception: append the comment  gitleaks:allow  to that line.
+
+title = "repo-bootstrap: secrets + infrastructure details"
+
+[extend]
+useDefault = true
+
+# ---------------------------------------------------------------- infra
+
+[[rules]]
+id = "infra-private-ipv4"
+description = "LAN address (RFC 1918) — use a placeholder from 192.0.2.0/24 or an env var"
+regex = '''\b(10\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])|172\.(?:1[6-9]|2[0-9]|3[01])\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])|192\.168\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]))\b'''
+secretGroup = 1
+keywords = ["10.", "172.", "192.168."]
+tags = ["infra"]
+
+[[rules]]
+id = "infra-cgnat-ipv4"
+description = "VPN / CGNAT address (100.64.0.0/10, e.g. Tailscale) — use an env var"
+regex = '''\b(100\.(?:6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]))\b'''
+secretGroup = 1
+keywords = ["100."]
+tags = ["infra"]
+
+[[rules]]
+id = "infra-ssh-port"
+description = "Non-standard SSH port — use an env var such as SSH_PORT"
+regex = '''(?im)(?:\bssh\b[^\n]*?\s-p\s?|\b(?:scp|sftp)\b[^\n]*?\s-P\s?|\bssh[_-]?port\b["']?\s*[:=]\s*["']?|ssh://[^\s/:]+:|^[ \t]*Port[ \t]+)([0-9]{2,5})\b'''
+secretGroup = 1
+keywords = ["ssh", "scp", "sftp", "port"]
+tags = ["infra"]
+
+  [[rules.allowlists]]
+  description = "the standard port is not a disclosure"
+  regexes = ['''^22$''']
+
+[[rules]]
+id = "infra-home-path"
+description = "Home-directory path that names a real user — use $HOME, ~ or an env var"
+regex = '''(?:/home/|/Users/|\b[A-Za-z]:(?:\\{1,2}|/)Users(?:\\{1,2}|/))([A-Za-z0-9._-]+)'''
+secretGroup = 1
+keywords = ["/home/", "/users/", "users\\", "users/"]
+tags = ["infra"]
+
+  [[rules.allowlists]]
+  description = "generic / CI / container users"
+  regexes = ['''(?i)^(runner|user|username|you|your-user|yourname|me|example|foo|bar|test|node|ubuntu|vscode|codespace|docker|app|public|default|shared|all users)$''']
+
+[[rules]]
+id = "infra-internal-hostname"
+description = "Internal hostname (.lan / .home.arpa / .intranet / .ts.net) — use an env var"
+regex = '''(?i)\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:lan|home\.arpa|intranet|ts\.net))(?:[^a-z0-9_(-]|$)'''
+secretGroup = 1
+keywords = [".lan", ".home.arpa", ".intranet", ".ts.net"]
+tags = ["infra"]
+
+# .local / .internal double as attribute names in code (version.local, threading.local),
+# so these two rules only fire in a host context: URL, user@host, host=…, quoted, or host:port.
+[[rules]]
+id = "infra-mdns-hostname"
+description = "Internal hostname (.local / .internal) — use an env var"
+regex = '''(?:://|@|\bhost(?:name)?["']?\s*[:=]\s*["']?|["'])((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:local|internal))(?:[:/"'\s]|$)'''
+secretGroup = 1
+keywords = [".local", ".internal"]
+tags = ["infra"]
+
+  [[rules.allowlists]]
+  description = "well-known names that identify nothing about the owner"
+  regexes = ['''(?i)^(host\.docker\.internal|gateway\.docker\.internal|metadata\.google\.internal|.*\.cluster\.local)$''']
+
+[[rules]]
+id = "infra-mdns-hostname-port"
+description = "Internal hostname with a port (.local / .internal) — use an env var"
+regex = '''\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:local|internal)):[0-9]{2,5}\b'''
+secretGroup = 1
+keywords = [".local:", ".internal:"]
+tags = ["infra"]
+
+  [[rules.allowlists]]
+  description = "well-known names that identify nothing about the owner"
+  regexes = ['''(?i)^(host\.docker\.internal|gateway\.docker\.internal|metadata\.google\.internal|.*\.cluster\.local)$''']
+
+# ---------------------------------------------------------------- global
+
+[[allowlists]]
+description = "this config describes the patterns; it contains no real values"
+paths = ['''(?:^|/)\.gitleaks\.toml$''']
